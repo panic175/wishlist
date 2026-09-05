@@ -20,13 +20,24 @@ export const amazonScraper: Scraper = {
     let price: number | null = null;
     let currency: string | null = null;
 
-    const priceWhole = $('.a-price-whole').first().text().trim();
-    const priceFraction = $('.a-price-fraction').first().text().trim();
+    const offscreenPrice = $('.a-price .a-offscreen').first().text().trim();
+    if (offscreenPrice) {
+      const extracted = extractPrice(offscreenPrice);
+      price = extracted.price;
+      currency = extracted.currency;
+    }
 
-    if (priceWhole) {
-      const priceStr = priceWhole.replace(',', '') + (priceFraction || '00');
-      price = parseFloat(priceStr);
-      currency = 'USD';
+    if (price === null) {
+      const priceWhole = $('.a-price-whole').first().text().trim();
+      const priceFraction = $('.a-price-fraction').first().text().trim();
+
+      if (priceWhole) {
+        const fallbackPrice = extractPrice(
+          `${priceWhole}.${priceFraction || '00'} ${url.includes('.amazon.de') ? 'EUR' : 'USD'}`
+        );
+        price = fallbackPrice.price;
+        currency = fallbackPrice.currency;
+      }
     }
 
     if (price === null) {
@@ -51,9 +62,9 @@ export const amazonScraper: Scraper = {
     }
 
     const imageUrl =
+      $('img[data-old-hires]').attr('data-old-hires') ||
       $('#landingImage').attr('src') ||
       $('#imgBlkFront').attr('src') ||
-      $('img[data-old-hires]').attr('data-old-hires') ||
       $('meta[property="og:image"]').attr('content') ||
       null;
 
