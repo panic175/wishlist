@@ -22,6 +22,12 @@ export async function GET(request: NextRequest) {
     if (!settingsObj.homepageSubtext) {
       settingsObj.homepageSubtext = 'Browse and explore available wishlists';
     }
+    if (!settingsObj.language) {
+      settingsObj.language = 'en';
+    }
+    if (!settingsObj.defaultCurrency) {
+      settingsObj.defaultCurrency = process.env.DEFAULT_CURRENCY || 'USD';
+    }
 
     // Convert passwordLockEnabled to boolean
     (settingsObj as any).passwordLockEnabled = settingsObj.passwordLockEnabled === 'true';
@@ -60,7 +66,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { siteTitle, homepageSubtext, passwordLockEnabled, passwordLock } = body;
+    const { siteTitle, homepageSubtext, passwordLockEnabled, passwordLock, language, defaultCurrency } = body;
 
     // Update or insert siteTitle
     if (siteTitle !== undefined) {
@@ -148,6 +154,32 @@ export async function PUT(request: NextRequest) {
           value: hash,
         });
       }
+    }
+
+    // Upsert helper for simple string settings
+    const upsertSetting = async (key: string, value: string) => {
+      const existing = await db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, key))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await db
+          .update(settings)
+          .set({ value, updatedAt: new Date() })
+          .where(eq(settings.key, key));
+      } else {
+        await db.insert(settings).values({ key, value });
+      }
+    };
+
+    if (language !== undefined) {
+      await upsertSetting('language', language);
+    }
+
+    if (defaultCurrency !== undefined) {
+      await upsertSetting('defaultCurrency', defaultCurrency);
     }
 
     return NextResponse.json({
