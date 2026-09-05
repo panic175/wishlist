@@ -4,11 +4,14 @@ const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'e2e-pass';
 
 async function login(page: Page) {
-  await page.goto('/admin/login');
-  await page.fill('#username', ADMIN_USER);
-  await page.fill('#password', ADMIN_PASS);
-  await page.getByRole('button', { name: /sign in|anmelden/i }).click();
-  await page.waitForURL('**/admin');
+  // Authelia forward-auth mode: the app trusts the proxy-injected
+  // X-Forwarded-User header to bootstrap a session (see proxy.ts).
+  const response = await page.request.get('/api/auth/me', {
+    headers: { 'X-Forwarded-User': ADMIN_USER },
+  });
+  expect(response.ok()).toBe(true);
+
+  await page.goto('/admin');
   await expect(
     page.getByRole('heading', { name: /your wishlists|their wishlists|ihre wunschlisten/i })
   ).toBeVisible();
@@ -58,15 +61,24 @@ test('homepage renders seeded public wishlists', async ({ page }) => {
   await expect(page.getByText("Dad's Wishlist").first()).toBeVisible();
 });
 
-test('login rejects wrong password and accepts correct credentials', async ({ page }) => {
-  await page.goto('/admin/login');
-  await page.fill('#username', ADMIN_USER);
-  await page.fill('#password', 'wrong-password');
-  await page.getByRole('button', { name: /sign in|anmelden/i }).click();
-  await expect(page.locator('form')).toContainText(/invalid|ungültig|failed|fehlgeschlagen/i);
+test('authelia mode disables legacy login and gates /admin without a session', async ({ page }) => {
+  // The built-in app login is disabled while Authelia is enabled.
+  const legacyLogin = await page.request.post('/api/auth/login', {
+    data: { username: ADMIN_USER, password: ADMIN_PASS },
+  });
+  expect(legacyLogin.status()).toBe(403);
 
-  await login(page);
-  await expect(page).toHaveURL(/\/admin$/);
+  // The login page shows the Authelia continuation link instead of the form.
+  await page.goto('/admin/login');
+  await expect(page.getByRole('link', { name: 'Continue with Authelia' })).toBeVisible();
+
+  // Without the trusted header the admin area redirects to the login page…
+  await page.goto('/admin');
+  await expect(page).toHaveURL(/\/admin\/login$/);
+
+  // …and the session endpoint rejects the anonymous request.
+  const me = await page.request.get('/api/auth/me');
+  expect(me.status()).toBe(401);
 });
 
 test('admin can create a wishlist through the UI', async ({ page }) => {

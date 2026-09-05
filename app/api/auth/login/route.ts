@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAccessToken, generateRefreshToken, validateAdminCredentials, isSecureCookie } from '@/lib/auth/utils';
+import { isAutheliaEnabled } from '@/lib/auth/authelia';
 
 export async function POST(request: NextRequest) {
   try {
+    if (isAutheliaEnabled()) {
+      return NextResponse.json(
+        { error: 'Admin login is handled by Authelia' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { username, password } = body;
 

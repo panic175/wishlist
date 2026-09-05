@@ -10,7 +10,10 @@ slug URL, add items with purchase links, and let visitors claim items.
 - **Framework**: Next.js 16 (App Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v4
 - **Database**: SQLite via Drizzle ORM (`better-sqlite3`)
-- **Auth**: JWT (access + refresh) stored in httpOnly cookies
+- **Auth**: JWT (access + refresh) stored in httpOnly cookies. Optional Authelia
+  forward-auth (`AUTHELIA_ENABLED`) via `proxy.ts` (Next.js 16 proxy, Node runtime)
+  which trusts `AUTHELIA_USER_HEADER` and provisions a session; `/api/auth/login`
+  is disabled while enabled. Public wishlist/claim flows stay open.
 - **Other**: Lexical rich text editor, Sharp image processing, Axios + Cheerio scraping
 
 ## Commands
