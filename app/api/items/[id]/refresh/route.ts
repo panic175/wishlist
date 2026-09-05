@@ -83,6 +83,7 @@ export async function POST(
     if (refreshPrimary) {
       if (scraped.price !== null) updateData.price = scraped.price;
       if (scraped.currency) updateData.currency = scraped.currency;
+      if (scraped.imageUrl) updateData.imageUrl = scraped.imageUrl;
     }
 
     const updatedItem = await db
