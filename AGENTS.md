@@ -12,7 +12,7 @@ slug URL, add items with purchase links, and let visitors claim items.
 - **Database**: SQLite via Drizzle ORM (`better-sqlite3`)
 - **Auth**: JWT (access + refresh) stored in httpOnly cookies. Optional Authelia
   forward-auth (`AUTHELIA_ENABLED`) via `proxy.ts` (Next.js 16 proxy, Node runtime)
-  which trusts `AUTHELIA_USER_HEADER` (default `X-Forwarded-User`) and provisions
+  which trusts `AUTHELIA_USER_HEADER` (default `Remote-User`) and provisions
   a session; `/api/auth/login` is disabled while enabled; the login page reads
   runtime env `AUTHELIA_PORTAL_URL` (no `NEXT_PUBLIC_*` build-time vars).
   Public wishlist/claim flows stay open.
