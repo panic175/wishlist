@@ -242,6 +242,23 @@ export const itemsApi = {
     const result = await handleResponse<{ success: boolean; item: Item }>(response);
     return result.item;
   },
+
+  async refreshUrl(id: string, url: string) {
+    const response = await fetch(`${API_BASE_URL}/items/${id}/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ url }),
+    });
+    const result = await handleResponse<{
+      success: boolean;
+      data: ScrapedData;
+      item: Item;
+    }>(response);
+    return result.item;
+  },
 };
 
 // Claiming API (public)

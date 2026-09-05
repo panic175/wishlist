@@ -234,6 +234,16 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
             onChange={(urls) =>
               setFormData((prev) => ({ ...prev, purchaseUrls: urls }))
             }
+            itemId={mode === 'edit' ? item?.id : undefined}
+            onRefreshed={(updatedItem) =>
+              setFormData((prev) => ({
+                ...prev,
+                price: updatedItem.price ?? prev.price,
+                currency: updatedItem.currency || prev.currency,
+                imageUrl: updatedItem.imageUrl || prev.imageUrl,
+                purchaseUrls: updatedItem.purchaseUrls || prev.purchaseUrls || [],
+              }))
+            }
           />
         </div>
       </div>

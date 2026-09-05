@@ -38,6 +38,9 @@ export const wishlistItems = sqliteTable('wishlist_items', {
   purchaseUrls: text('purchase_urls', { mode: 'json' }).$type<Array<{
     label: string;
     url: string;
+    price?: number | null;
+    currency?: string;
+    imageUrl?: string | null;
   }>>(),
 
   isArchived: integer('is_archived', { mode: 'boolean' }).notNull().default(false),
