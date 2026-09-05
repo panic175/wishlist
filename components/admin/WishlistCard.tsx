@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { type Wishlist, type Item, itemsApi } from '@/lib/api';
+import { useRef, useState } from 'react';
+import { type Wishlist, type Item, itemsApi, wishlistsApi } from '@/lib/api';
 import ImageUpload from '@/components/image-upload';
 import RichTextEditor from '@/components/RichTextEditor';
 import ItemCard from './ItemCard';
@@ -48,6 +48,8 @@ export default function WishlistCard({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [showAddItemForm, setShowAddItemForm] = useState(false);
   const [newItemError, setNewItemError] = useState<string>('');
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const startEditing = () => {
     setEditingId(wishlist.id);
@@ -168,6 +170,46 @@ export default function WishlistCard({
   };
 
   const editingItem = wishlistItems.find((item) => item.id === editingItemId);
+
+  const handleExportCsv = async () => {
+    try {
+      const csv = await wishlistsApi.exportCsv(wishlist.id);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wishlist-${wishlist.slug}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      alert(error?.message || t('wishlistCard.importFailed'));
+    }
+  };
+
+  const handleImportCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setImporting(true);
+      try {
+        const result = await wishlistsApi.importCsv(wishlist.id, String(reader.result || ''));
+        const items = await itemsApi.getAll(wishlist.id);
+        setWishlistItems(items);
+        onItemsChange();
+        alert(t('wishlistCard.importSuccess', { created: result.created }));
+      } catch (error: any) {
+        alert(error?.message || t('wishlistCard.importFailed'));
+      } finally {
+        setImporting(false);
+      }
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -422,15 +464,39 @@ export default function WishlistCard({
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t('wishlistCard.itemsSection', { count: wishlistItems.length })}
             </h4>
-            <button
-              onClick={() => {
-                setShowAddItemForm(true);
-                setNewItemError('');
-              }}
-              className="px-4 py-2 text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer"
-            >
-              {t('wishlistCard.addItem')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setShowAddItemForm(true);
+                  setNewItemError('');
+                }}
+                className="px-4 py-2 text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer"
+              >
+                {t('wishlistCard.addItem')}
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="px-4 py-2 text-base font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors cursor-pointer"
+              >
+                {t('wishlistCard.exportCsv')}
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                className="px-4 py-2 text-base font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {importing ? t('uploading') : t('wishlistCard.importCsv')}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={handleImportCsv}
+              />
+            </div>
           </div>
 
           {/* Add Item Form */}

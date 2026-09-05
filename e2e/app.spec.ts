@@ -250,3 +250,88 @@ test('edit mode shows a refresh button for existing purchase URLs', async ({ pag
 
   await deleteWishlist(page, wishlist.wishlist.id);
 });
+
+test('exporting a wishlist produces a downloadable CSV with item data', async ({ page }) => {
+  await login(page);
+
+  const slug = `export-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Export Test List', slug);
+  await createItem(page, wishlist.wishlist.id, {
+    name: 'Keyboard',
+    price: 79,
+    currency: 'EUR',
+    purchaseUrls: [{ label: 'Keyboard Store', url: 'https://kb.example.com/keyboard', price: 79, currency: 'EUR' }],
+  });
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.goto('/admin');
+  await expandWishlist(page, 'Export Test List');
+  await page.getByRole('button', { name: 'Export CSV' }).click();
+  const download = await downloadPromise;
+
+  const path = await download.path();
+  const content = (await import('node:fs')).readFileSync(path!, 'utf-8');
+
+  expect(download.suggestedFilename()).toBe(`wishlist-${slug}.csv`);
+  expect(content.replace(/^\uFEFF/, '')).toContain('name,description,price,currency,quantity');
+  expect(content).toContain('Keyboard');
+  expect(content).toContain('79');
+  expect(content).toContain('EUR');
+  expect(content).toContain('https://kb.example.com/keyboard');
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('importing a CSV adds new items to a wishlist', async ({ page }) => {
+  await login(page);
+
+  const slug = `import-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Import Test List', slug);
+  const csv = [
+    'name,description,price,currency,quantity,purchase_urls',
+    'USB-C Cable,2m braided,19.99,EUR,2,"[{""label"":""Cable Store"",""url"":""https://cable.example.com"",""price"":19.99,""currency"":""EUR""}]"',
+    'Phone Stand,Aluminium,25,GBP,1,"[{""label"":""Stand Store"",""url"":""https://stand.example.com"",""price"":25,""currency"":""GBP""}]"',
+  ].join('\r\n');
+
+  const importRes = await page.request.post(`/api/wishlists/${wishlist.wishlist.id}/import`, {
+    data: { csv },
+  });
+  expect(importRes.ok()).toBe(true);
+  const { created, skipped } = (await importRes.json()) as { created: number; skipped: number };
+  expect(created).toBe(2);
+  expect(skipped).toBe(0);
+
+  const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+  const { items } = (await itemsRes.json()) as { items: Array<{ name: string; price: number; currency: string; quantity: number; purchaseUrls: unknown }> };
+  expect(items).toHaveLength(2);
+
+  const cable = items.find((i) => i.name === 'USB-C Cable');
+  expect(cable?.price).toBe(19.99);
+  expect(cable?.currency).toBe('EUR');
+  expect(cable?.quantity).toBe(2);
+  expect(cable?.purchaseUrls).toHaveLength(1);
+
+  await page.goto(`/${slug}`);
+  await expect(page.getByText('USB-C Cable')).toBeVisible();
+  await expect(page.getByText('Phone Stand')).toBeVisible();
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('import CSV requires the name column and valid csv', async ({ page }) => {
+  await login(page);
+  const slug = `import-bad-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Import Bad Test List', slug);
+
+  const missingName = await page.request.post(`/api/wishlists/${wishlist.wishlist.id}/import`, {
+    data: { csv: 'description\njust a note\n' },
+  });
+  expect(missingName.status()).toBe(400);
+
+  const noBody = await page.request.post(`/api/wishlists/${wishlist.wishlist.id}/import`, {
+    data: {},
+  });
+  expect(noBody.status()).toBe(400);
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});

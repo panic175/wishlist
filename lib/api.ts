@@ -179,6 +179,26 @@ export const wishlistsApi = {
     const result = await handleResponse<{ success: boolean; wishlist: Wishlist }>(response);
     return result.wishlist;
   },
+
+  async exportCsv(id: string): Promise<string> {
+    const response = await fetch(`${API_BASE_URL}/wishlists/${id}/export`, {
+      credentials: 'include',
+    });
+    if (!response.ok) await handleResponse(response);
+    return response.text();
+  },
+
+  async importCsv(id: string, csv: string) {
+    const response = await fetch(`${API_BASE_URL}/wishlists/${id}/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ csv }),
+    });
+    return handleResponse<{ success: boolean; created: number; skipped: number }>(response);
+  },
 };
 
 // Items API
