@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
+import { useLanguage } from '@/lib/i18n/provider';
 
 export default function LockPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -32,11 +34,11 @@ export default function LockPage() {
         router.push('/');
         router.refresh();
       } else {
-        setError(data.error || 'Incorrect password');
+        setError(data.error || t('lock.incorrect'));
         setPassword('');
       }
     } catch (err) {
-      setError('Failed to verify password. Please try again.');
+      setError(t('lock.failed'));
       console.error('Lock verification error:', err);
     } finally {
       setIsSubmitting(false);
@@ -46,8 +48,8 @@ export default function LockPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header
-        title="Password Required"
-        subtitle="Please enter the password to access this site"
+        title={t('lock.passwordRequired')}
+        subtitle={t('lock.subtitle')}
       />
 
       <div className="max-w-md mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -62,7 +64,7 @@ export default function LockPage() {
 
               <div>
                 <label htmlFor="password" className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Password
+                  {t('lock.password')}
                 </label>
                 <input
                   type="password"
@@ -72,7 +74,7 @@ export default function LockPage() {
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-lg"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
+                  placeholder={t('lock.enterPasswordPlaceholder')}
                   disabled={isSubmitting}
                 />
               </div>
@@ -82,7 +84,7 @@ export default function LockPage() {
                 disabled={isSubmitting}
                 className="w-full px-6 py-3 text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Verifying...' : 'Submit'}
+                {isSubmitting ? t('lock.verifying') : t('lock.submit')}
               </button>
             </form>
           </div>

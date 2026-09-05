@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguage } from '@/lib/i18n/provider';
 
 interface ShareButtonProps {
   title?: string;
@@ -15,6 +16,7 @@ export default function ShareButton({
   url,
   className = ''
 }: ShareButtonProps) {
+  const { t } = useLanguage();
   const [isSupported, setIsSupported] = useState(true);
 
   const handleShare = async () => {
@@ -27,10 +29,10 @@ export default function ShareButton({
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
-        alert('Link copied to clipboard!');
+        alert(t('share.copied'));
       } catch (err) {
         console.error('Failed to copy:', err);
-        alert('Unable to share or copy link');
+        alert(t('share.cannotShare'));
       }
       return;
     }
@@ -58,7 +60,7 @@ export default function ShareButton({
     <button
       onClick={handleShare}
       className={`inline-flex items-center px-6 py-3 border-2 border-indigo-600 dark:border-indigo-500 text-base font-semibold rounded-lg text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all cursor-pointer ${className}`}
-      title="Share this page"
+      title={t('share.titleHint')}
     >
       <svg
         className="w-5 h-5 mr-2"
@@ -73,7 +75,7 @@ export default function ShareButton({
           d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
         />
       </svg>
-      Share
+      {t('share.share')}
     </button>
   );
 }

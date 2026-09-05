@@ -12,8 +12,10 @@ import SettingsSection from '@/components/admin/SettingsSection';
 import WishlistCard from '@/components/admin/WishlistCard';
 import CreateWishlistModal from '@/components/admin/CreateWishlistModal';
 import ShareButton from '@/components/share-button';
+import { useLanguage } from '@/lib/i18n/provider';
 
 export default function AdminPage() {
+  const { t } = useLanguage();
   const { logout } = useAuth();
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
   const [itemCounts, setItemCounts] = useState<Record<string, number>>({});
@@ -84,13 +86,13 @@ export default function AdminPage() {
   };
 
   const handleDeleteWishlist = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this wishlist?')) return;
+    if (!confirm(t('admin.deleteWishlistConfirm'))) return;
 
     try {
       await wishlistsApi.delete(id);
       fetchWishlists();
     } catch (error) {
-      alert('Failed to delete wishlist');
+      alert(t('admin.deleteWishlistFailed'));
     }
   };
 
@@ -128,30 +130,30 @@ export default function AdminPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header
-          title="Dashboard"
-          subtitle="Manage your wishlists and items"
+          title={t('admin.dashboard')}
+          subtitle={t('admin.dashboardSubtitle')}
           actions={
             <>
               <ShareButton
-                title="Check out my wishlist site!"
-                text="I wanted to share my wishlist site with you."
-                url="https://wishlist.tieso.co/"
+                title={t('admin.shareTitle')}
+                text={t('admin.shareText')}
+                url={t('admin.shareUrl')}
               />
               <Link
                 href="/"
                 className="inline-flex items-center px-6 py-3 border-2 border-indigo-600 dark:border-indigo-500 text-base font-semibold rounded-lg text-indigo-600 dark:text-indigo-400 bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all"
               >
-                View Public Site
+                {t('admin.viewPublicSite')}
               </Link>
               <button
                 onClick={logout}
                 className="inline-flex items-center px-6 py-3 border-2 border-red-600 dark:border-red-500 text-base font-semibold rounded-lg text-red-600 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"
-                title="Logout"
+                title={t('logout')}
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Logout
+                {t('logout')}
               </button>
             </>
           }
@@ -161,7 +163,7 @@ export default function AdminPage() {
           <div className="px-4 sm:px-0">
             {isLoading ? (
               <div className="text-center py-12">
-                <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
               </div>
             ) : (
               <>
@@ -175,25 +177,25 @@ export default function AdminPage() {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      Your Wishlists
+                      {t('admin.yourWishlists')}
                     </h2>
                     <button
                       onClick={() => setShowCreateModal(true)}
                       className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all cursor-pointer"
                     >
-                      + Create Wishlist
+                      {t('admin.createWishlist')}
                     </button>
                   </div>
                   {wishlists.length === 0 ? (
                     <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                       <p className="text-gray-500 dark:text-gray-400 mb-6 text-lg">
-                        No wishlists yet
+                        {t('admin.noWishlistsYet')}
                       </p>
                       <button
                         onClick={() => setShowCreateModal(true)}
                         className="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all"
                       >
-                        Create Your First Wishlist
+                        {t('admin.createFirstWishlist')}
                       </button>
                     </div>
                   ) : (

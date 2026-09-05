@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useLanguage } from '@/lib/i18n/provider';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -14,9 +15,11 @@ export default function ImageUpload({
   currentImageUrl,
   onImageChange,
   type,
-  label = 'Image',
+  label,
   onUploadStateChange,
 }: ImageUploadProps) {
+  const { t } = useLanguage();
+  const resolvedLabel = label ?? t('upload.defaultLabel');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
@@ -31,12 +34,12 @@ export default function ImageUpload({
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
     if (!allowedTypes.includes(file.type)) {
-      setUploadError('Invalid file type. Please upload a JPEG, PNG, WebP, or GIF image.');
+      setUploadError(t('upload.invalidType'));
       return;
     }
 
     if (file.size > maxSize) {
-      setUploadError('File is too large. Maximum size is 5MB.');
+      setUploadError(t('upload.tooLarge'));
       return;
     }
 
@@ -69,14 +72,14 @@ export default function ImageUpload({
           setUploadProgress(100);
         } catch (error) {
           console.error('Failed to parse response:', error);
-          setUploadError('Failed to parse server response');
+          setUploadError(t('upload.parseFailed'));
         }
       } else {
         try {
           const data = JSON.parse(xhr.responseText);
-          setUploadError(data.error || 'Upload failed');
+          setUploadError(data.error || t('upload.uploaded'));
         } catch {
-          setUploadError(`Upload failed with status ${xhr.status}`);
+          setUploadError(t('upload.statusFailed', { status: xhr.status }));
         }
       }
       setIsUploading(false);
@@ -86,14 +89,14 @@ export default function ImageUpload({
     // Handle errors
     xhr.addEventListener('error', () => {
       console.error('Upload error');
-      setUploadError('Network error occurred during upload');
+      setUploadError(t('upload.networkError'));
       setIsUploading(false);
       onUploadStateChange?.(false);
     });
 
     // Handle abort
     xhr.addEventListener('abort', () => {
-      setUploadError('Upload was cancelled');
+      setUploadError(t('upload.cancelled'));
       setIsUploading(false);
       onUploadStateChange?.(false);
     });
@@ -169,16 +172,16 @@ export default function ImageUpload({
 
   return (
     <div ref={pasteAreaRef} className="space-y-3" tabIndex={-1}>
-      {label && (
+      {resolvedLabel && (
         <label className="flex items-center gap-2 text-base font-medium text-gray-700 dark:text-gray-300">
-          {label}
+          {resolvedLabel}
           <div className="group relative inline-block">
             <svg
               className="w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 cursor-help transition-colors"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
-              aria-label="Upload information"
+              aria-label={t('upload.info')}
             >
               <path
                 strokeLinecap="round"
@@ -188,7 +191,7 @@ export default function ImageUpload({
               />
             </svg>
             <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg whitespace-nowrap z-10 pointer-events-none">
-              Max 5MB. Allowed: JPEG, PNG, WebP, GIF. Images will be resized to max 800x800px and optimized.
+              {t('upload.info')}
               <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
             </div>
           </div>
@@ -210,7 +213,7 @@ export default function ImageUpload({
             type="button"
             onClick={handleRemoveImage}
             className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-colors"
-            title="Remove image"
+            title={t('upload.removeImage')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -230,7 +233,7 @@ export default function ImageUpload({
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
-              Use URL
+              {t('upload.useUrl')}
             </button>
             <button
               type="button"
@@ -241,7 +244,7 @@ export default function ImageUpload({
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
-              Upload File
+              {t('upload.uploadFile')}
             </button>
           </div>
 
@@ -268,7 +271,7 @@ export default function ImageUpload({
                 disabled={isUploading}
               />
               <p className="mt-1 text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                💡 Tip: You can also paste an image directly (Ctrl+V / Cmd+V)
+                {t('upload.tip')}
               </p>
             </div>
           )}
@@ -284,7 +287,7 @@ export default function ImageUpload({
           {isUploading && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
-                <span>Uploading...</span>
+                <span>{t('upload.uploading')}</span>
                 <span className="font-medium">{Math.round(uploadProgress)}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">

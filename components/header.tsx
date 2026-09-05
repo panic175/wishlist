@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
+import { useLanguage } from '@/lib/i18n/provider';
 
 interface HeaderProps {
   title: string;
@@ -12,6 +13,7 @@ interface HeaderProps {
 
 export default function Header({ title, subtitle, imageUrl, actions, maxWidth = 'max-w-7xl' }: HeaderProps) {
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
 
   return (
     <>
@@ -20,7 +22,7 @@ export default function Header({ title, subtitle, imageUrl, actions, maxWidth = 
         <div className="sticky top-0 z-50 bg-yellow-50 dark:bg-yellow-900 border-b border-yellow-200 dark:border-yellow-800">
           <div className={`${maxWidth} mx-auto py-3 px-4 sm:px-6 lg:px-8`}>
             <p className="text-center text-sm text-yellow-800 dark:text-yellow-200">
-              ⚠️ Warning: Viewing public wishlists may spoil surprises
+              {t('admin.warning')}
             </p>
           </div>
         </div>

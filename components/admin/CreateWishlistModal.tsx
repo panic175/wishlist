@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ImageUpload from '@/components/image-upload';
 import RichTextEditor from '@/components/RichTextEditor';
+import { useLanguage } from '@/lib/i18n/provider';
 
 interface WishlistFormData {
   name: string;
@@ -26,6 +27,7 @@ export default function CreateWishlistModal({
   onCreate,
   error,
 }: CreateWishlistModalProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<WishlistFormData>({
     name: '',
     slug: '',
@@ -71,7 +73,7 @@ export default function CreateWishlistModal({
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-          Create New Wishlist
+          {t('createWishlist.title')}
         </h2>
         <form onSubmit={handleSubmit}>
           {error && (
@@ -82,7 +84,7 @@ export default function CreateWishlistModal({
           <div className="space-y-4">
             <div>
               <label className="block text-base font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Name *
+                {t('createWishlist.name')}
               </label>
               <input
                 type="text"
@@ -94,7 +96,7 @@ export default function CreateWishlistModal({
             </div>
             <div>
               <label className="block text-base font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Slug (URL-friendly)
+                {t('createWishlist.slug')}
               </label>
               <input
                 type="text"
@@ -108,7 +110,7 @@ export default function CreateWishlistModal({
             </div>
             <div>
               <label className="block text-base font-medium text-gray-900 dark:text-gray-200 mb-1">
-                Description
+                {t('createWishlist.description')}
               </label>
               <textarea
                 rows={3}
@@ -124,15 +126,15 @@ export default function CreateWishlistModal({
             </div>
             <div>
               <label className="block text-base font-medium text-gray-900 dark:text-gray-200 mb-2">
-                General Interests & Preferences
+                {t('createWishlist.preferences')}
               </label>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Share general things you like - hobbies, styles, colors, brands, etc. This appears before your wishlist items.
+                {t('createWishlist.preferencesHint')}
               </p>
               <RichTextEditor
                 value={formData.preferences}
                 onChange={(html) => setFormData((prev) => ({ ...prev, preferences: html }))}
-                placeholder="e.g., I love anything purple, enjoy sci-fi books, prefer sustainable brands..."
+                placeholder={t('createWishlist.preferencesPlaceholder')}
               />
             </div>
             <ImageUpload
@@ -140,7 +142,7 @@ export default function CreateWishlistModal({
               onImageChange={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
               onUploadStateChange={setIsImageUploading}
               type="wishlist"
-              label="Wishlist Image"
+              label={t('createWishlist.wishlistImage')}
             />
             <div className="flex items-center">
               <input
@@ -159,7 +161,7 @@ export default function CreateWishlistModal({
                 htmlFor="isPublic"
                 className="ml-2 block text-base font-medium text-gray-900 dark:text-gray-200"
               >
-                Make Public
+                {t('createWishlist.makePublic')}
               </label>
             </div>
           </div>
@@ -169,14 +171,14 @@ export default function CreateWishlistModal({
               onClick={handleClose}
               className="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={isCreating || isImageUploading}
               className="px-6 py-3 border border-transparent rounded-lg text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isImageUploading ? 'Uploading...' : isCreating ? 'Creating...' : 'Create'}
+              {isImageUploading ? t('uploading') : isCreating ? t('creating') : t('createWishlist.created')}
             </button>
           </div>
         </form>

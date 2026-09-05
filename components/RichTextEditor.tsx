@@ -16,9 +16,11 @@ import { LinkNode, AutoLinkNode, $createLinkNode, TOGGLE_LINK_COMMAND } from '@l
 import { HeadingNode, QuoteNode, $createHeadingNode } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/lib/i18n/provider';
 
 // Toolbar Component
 function ToolbarPlugin() {
+  const { t } = useLanguage();
   const [editor] = useLexicalComposerContext();
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -96,7 +98,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={formatBold}
           className="px-3 py-1.5 text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Bold"
+          title={t('editor.bold')}
         >
           B
         </button>
@@ -104,7 +106,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={formatItalic}
           className="px-3 py-1.5 text-sm italic hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Italic"
+          title={t('editor.italic')}
         >
           I
         </button>
@@ -112,7 +114,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={formatUnderline}
           className="px-3 py-1.5 text-sm underline hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Underline"
+          title={t('editor.underline')}
         >
           U
         </button>
@@ -121,7 +123,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={() => formatHeading('h2')}
           className="px-3 py-1.5 text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Heading 2"
+          title={t('editor.heading2')}
         >
           H2
         </button>
@@ -129,7 +131,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={() => formatHeading('h3')}
           className="px-3 py-1.5 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Heading 3"
+          title={t('editor.heading3')}
         >
           H3
         </button>
@@ -138,7 +140,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={formatBulletList}
           className="px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Bullet List"
+          title={t('editor.bulletList')}
         >
           • List
         </button>
@@ -146,7 +148,7 @@ function ToolbarPlugin() {
           type="button"
           onClick={formatNumberedList}
           className="px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Numbered List"
+          title={t('editor.numberedList')}
         >
           1. List
         </button>
@@ -155,9 +157,9 @@ function ToolbarPlugin() {
           type="button"
           onClick={openLinkModal}
           className="px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-          title="Insert Link"
+          title={t('editor.insertLink')}
         >
-          🔗 Link
+          🔗 {t('editor.link')}
         </button>
       </div>
 
@@ -165,23 +167,23 @@ function ToolbarPlugin() {
       {showLinkModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowLinkModal(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Insert Link</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('editor.insertLink')}</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Link Text {!linkText && '(optional)'}
+                  {t('editor.linkText')} {!linkText && t('editor.optional')}
                 </label>
                 <input
                   type="text"
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
-                  placeholder="Click here"
+                  placeholder={t('editor.clickHere')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL *
+                  {t('editor.url')}
                 </label>
                 <input
                   type="url"
@@ -199,7 +201,7 @@ function ToolbarPlugin() {
                 onClick={() => setShowLinkModal(false)}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -243,7 +245,9 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
-export default function RichTextEditor({ value, onChange, placeholder = 'Enter text...' }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const { t } = useLanguage();
+  const resolvedPlaceholder = placeholder ?? t('editor.enterText');
   const initialConfig = {
     namespace: 'WishlistPreferences',
     theme: {
@@ -293,7 +297,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Enter t
           }
           placeholder={
             <div className="absolute top-14 left-4 text-gray-400 pointer-events-none">
-              {placeholder}
+              {resolvedPlaceholder}
             </div>
           }
           ErrorBoundary={LexicalErrorBoundary}

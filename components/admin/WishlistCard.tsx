@@ -6,6 +6,7 @@ import ImageUpload from '@/components/image-upload';
 import RichTextEditor from '@/components/RichTextEditor';
 import ItemCard from './ItemCard';
 import ItemForm from './ItemForm';
+import { useLanguage } from '@/lib/i18n/provider';
 
 interface WishlistCardProps {
   wishlist: Wishlist;
@@ -30,6 +31,7 @@ export default function WishlistCard({
   isLast,
   onItemsChange,
 }: WishlistCardProps) {
+  const { t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -84,7 +86,7 @@ export default function WishlistCard({
       await onUpdate(wishlist.id, editForm);
       setEditingId(null);
     } catch (error: any) {
-      setEditError(error.message || 'Failed to update wishlist');
+      setEditError(error.message || t('wishlistCard.updateFailed'));
     }
   };
 
@@ -107,7 +109,7 @@ export default function WishlistCard({
       setWishlistItems(items);
       onItemsChange();
     } catch (error: any) {
-      setNewItemError(error.message || 'Failed to create item');
+      setNewItemError(error.message || t('wishlistCard.createItemFailed'));
       throw error;
     }
   };
@@ -121,13 +123,13 @@ export default function WishlistCard({
       setWishlistItems(items);
       onItemsChange();
     } catch (error: any) {
-      alert(error.message || 'Failed to update item');
+      alert(error.message || t('wishlistCard.updateItemFailed'));
       throw error;
     }
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    if (!confirm(t('wishlistCard.deleteItemConfirm'))) return;
 
     try {
       await itemsApi.delete(itemId);
@@ -135,7 +137,7 @@ export default function WishlistCard({
       setWishlistItems(items);
       onItemsChange();
     } catch (error) {
-      alert('Failed to delete item');
+      alert(t('wishlistCard.deleteItemFailed'));
     }
   };
 
@@ -148,7 +150,7 @@ export default function WishlistCard({
       const updatedItems = await itemsApi.getAll(wishlist.id);
       setWishlistItems(updatedItems);
     } catch (error: any) {
-      alert(error?.message || 'Failed to reorder item');
+      alert(error?.message || t('wishlistCard.reorderFailed'));
     }
   };
 
@@ -161,7 +163,7 @@ export default function WishlistCard({
       const updatedItems = await itemsApi.getAll(wishlist.id);
       setWishlistItems(updatedItems);
     } catch (error: any) {
-      alert(error?.message || 'Failed to reorder item');
+      alert(error?.message || t('wishlistCard.reorderFailed'));
     }
   };
 
@@ -185,7 +187,7 @@ export default function WishlistCard({
               }}
               disabled={isFirst}
               className="flex-1 flex items-center justify-center text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border-b border-gray-200 dark:border-gray-700 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Move up"
+              title={t('wishlistCard.moveUp')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -198,7 +200,7 @@ export default function WishlistCard({
               }}
               disabled={isLast}
               className="flex-1 flex items-center justify-center text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Move down"
+              title={t('wishlistCard.moveDown')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -216,12 +218,12 @@ export default function WishlistCard({
                   }
                   onUploadStateChange={setIsWishlistImageUploading}
                   type="wishlist"
-                  label="Wishlist Image"
+                  label={t('wishlistCard.wishlistImage')}
                 />
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Wishlist Name *
+                      {t('wishlistCard.wishlistName')}
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -229,7 +231,7 @@ export default function WishlistCard({
                         value={editForm.name}
                         onChange={(e) => handleEditNameChange(e.target.value)}
                         className="text-lg font-bold px-2 py-1 border-2 border-indigo-500 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white flex-1"
-                        placeholder="Wishlist name"
+                        placeholder={t('wishlistCard.wishlistNamePlaceholder')}
                       />
                       <label className="flex items-center gap-2 text-base">
                         <input
@@ -243,13 +245,13 @@ export default function WishlistCard({
                           }
                           className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
                         />
-                        <span className="text-gray-700 dark:text-gray-300">Public</span>
+                        <span className="text-gray-700 dark:text-gray-300">{t('wishlistCard.public')}</span>
                       </label>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      URL Slug *
+                      {t('wishlistCard.urlSlug')}
                     </label>
                     <input
                       type="text"
@@ -258,12 +260,12 @@ export default function WishlistCard({
                         setEditForm((prev) => ({ ...prev, slug: e.target.value }))
                       }
                       className="text-base px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white w-full"
-                      placeholder="url-slug"
+                      placeholder={t('wishlistCard.urlSlugPlaceholder')}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Description
+                      {t('wishlistCard.description')}
                     </label>
                     <textarea
                       value={editForm.description}
@@ -274,22 +276,22 @@ export default function WishlistCard({
                         }))
                       }
                       className="text-base px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white w-full"
-                      placeholder="Description"
+                      placeholder={t('wishlistCard.descriptionPlaceholder')}
                       rows={2}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Preferences
+                      {t('wishlistCard.preferences')}
                     </label>
                     <RichTextEditor
                       value={editForm.preferences}
                       onChange={(html) => setEditForm((prev) => ({ ...prev, preferences: html }))}
-                      placeholder="General interests and preferences..."
+                      placeholder={t('wishlistCard.preferencesPlaceholder')}
                     />
                   </div>
                   <p className="text-base text-gray-500 dark:text-gray-500">
-                    {itemCount} items
+                    {t('wishlistCard.items', { count: itemCount })}
                   </p>
                 </div>
               </div>
@@ -315,7 +317,7 @@ export default function WishlistCard({
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                       }`}
                     >
-                      {wishlist.isPublic ? 'Public' : 'Private'}
+                      {wishlist.isPublic ? t('wishlistCard.public') : t('wishlistCard.private')}
                     </span>
                   </div>
                   <p className="text-base text-gray-600 dark:text-gray-400 mb-1">
@@ -327,7 +329,7 @@ export default function WishlistCard({
                     </p>
                   )}
                   <p className="text-base text-gray-500 dark:text-gray-500">
-                    {itemCount} items
+                    {t('wishlistCard.items', { count: itemCount })}
                   </p>
                 </div>
               </div>
@@ -339,7 +341,7 @@ export default function WishlistCard({
                 <button
                   onClick={cancelEditing}
                   className="flex-1 flex items-center justify-center text-base font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border-b border-gray-200 dark:border-gray-700"
-                  title="Cancel"
+                  title={t('cancel')}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -352,7 +354,7 @@ export default function WishlistCard({
                   }}
                   disabled={isWishlistImageUploading}
                   className="flex-1 flex items-center justify-center text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={isWishlistImageUploading ? "Uploading..." : "Save"}
+                  title={isWishlistImageUploading ? t('uploading') : t('save')}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -367,7 +369,7 @@ export default function WishlistCard({
                     startEditing();
                   }}
                   className="flex-1 flex items-center justify-center text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors border-b border-gray-200 dark:border-gray-700 cursor-pointer"
-                  title="Edit wishlist"
+                  title={t('wishlistCard.editWishlist')}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -379,7 +381,7 @@ export default function WishlistCard({
                     onDelete(wishlist.id);
                   }}
                   className="flex-1 flex items-center justify-center text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
-                  title="Delete wishlist"
+                  title={t('wishlistCard.deleteWishlist')}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -401,14 +403,14 @@ export default function WishlistCard({
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
-            <span>Hide Items</span>
+            <span>{t('wishlistCard.hideItems')}</span>
           </>
         ) : (
           <>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
-            <span>Show Items ({itemCount})</span>
+            <span>{t('wishlistCard.showItems', { count: itemCount })}</span>
           </>
         )}
       </button>
@@ -418,7 +420,7 @@ export default function WishlistCard({
         <div className="p-5 bg-gray-50 dark:bg-gray-900/50">
           <div className="flex justify-between items-center mb-4">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Items ({wishlistItems.length})
+              {t('wishlistCard.itemsSection', { count: wishlistItems.length })}
             </h4>
             <button
               onClick={() => {
@@ -427,7 +429,7 @@ export default function WishlistCard({
               }}
               className="px-4 py-2 text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors cursor-pointer"
             >
-              + Add Item
+              {t('wishlistCard.addItem')}
             </button>
           </div>
 
@@ -447,7 +449,7 @@ export default function WishlistCard({
           {/* Items List */}
           {wishlistItems.length === 0 ? (
             <p className="text-base text-gray-500 dark:text-gray-400 text-center py-4">
-              No items yet
+              {t('wishlistCard.noItemsYet')}
             </p>
           ) : (
             <div className="space-y-3">

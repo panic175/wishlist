@@ -5,8 +5,10 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { ApiError } from '@/lib/api';
+import { useLanguage } from '@/lib/i18n/provider';
 
 export default function AdminLoginPage() {
+  const { t } = useLanguage();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -31,7 +33,7 @@ export default function AdminLoginPage() {
       router.push('/admin');
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.message || 'Login failed');
+      setError(apiError.message || t('login.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +43,7 @@ export default function AdminLoginPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
       </div>
     );
   }
@@ -58,10 +60,10 @@ export default function AdminLoginPage() {
         <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-4">
-              Admin Login
+              {t('login.title')}
             </h1>
             <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-6">
-              Sign in to your account
+              {t('login.subtitle')}
             </p>
             <Link
               href="/"
@@ -70,7 +72,7 @@ export default function AdminLoginPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Home
+              {t('login.backToHome')}
             </Link>
           </div>
         </div>
@@ -90,7 +92,7 @@ export default function AdminLoginPage() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="username" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Username
+                    {t('login.username')}
                   </label>
                   <input
                     id="username"
@@ -99,14 +101,14 @@ export default function AdminLoginPage() {
                     autoComplete="username"
                     required
                     className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-base"
-                    placeholder="admin"
+                    placeholder={t('login.usernamePlaceholder')}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
                 <div>
                   <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Password
+                    {t('login.password')}
                   </label>
                   <input
                     id="password"
@@ -115,7 +117,7 @@ export default function AdminLoginPage() {
                     autoComplete="current-password"
                     required
                     className="appearance-none block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-base"
-                    placeholder="Password"
+                    placeholder={t('login.passwordPlaceholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -128,7 +130,7 @@ export default function AdminLoginPage() {
                   disabled={isLoading}
                   className="w-full flex justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all"
                 >
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                  {isLoading ? t('login.signingIn') : t('login.signIn')}
                 </button>
               </div>
             </form>

@@ -1,7 +1,12 @@
-// Root-level not-found page
+'use client';
+
+import { useLanguage } from '@/lib/i18n/provider';
+
 export default function RootNotFound() {
+  const { t, lang } = useLanguage();
+
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body>
         <div style={{
           minHeight: '100vh',
@@ -22,10 +27,10 @@ export default function RootNotFound() {
           }}>
             <div style={{ fontSize: '3.75rem', fontWeight: 'bold', color: '#1f2937' }}>404</div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginTop: '1rem' }}>
-              Page Not Found
+              {t('notFound.title')}
             </h1>
             <p style={{ color: '#4b5563', marginTop: '1rem' }}>
-              The page you are looking for doesn't exist.
+              {t('notFound.body')}
             </p>
             <a
               href="/"
@@ -40,7 +45,7 @@ export default function RootNotFound() {
                 textDecoration: 'none'
               }}
             >
-              Go Home
+              {t('notFound.goHome')}
             </a>
           </div>
         </div>
