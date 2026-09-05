@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { wishlistsApi, itemsApi, claimingApi, type Wishlist, type Item } from '@/lib/api';
 import Header from '@/components/header';
@@ -29,26 +31,38 @@ export default function PublicWishlistPage() {
   // Unclaim state
   const [isUnclaiming, setIsUnclaiming] = useState(false);
   const [unclaimError, setUnclaimError] = useState('');
+  const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    fetchWishlist();
-  }, [params.slug]);
+  const slug = typeof params.slug === 'string' ? params.slug : undefined;
 
-  const fetchWishlist = async () => {
-    if (!params.slug) return;
+  const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
+  const fetchWishlist = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+    if (!slug) return;
 
     try {
-      const wishlistData = await wishlistsApi.getBySlug(params.slug as string);
-      setWishlist(wishlistData);
-
+      const wishlistData = await wishlistsApi.getBySlug(slug);
       const itemsData = await itemsApi.getAll(wishlistData.id);
+      if (requestId !== requestIdRef.current) return;
+      setWishlist(wishlistData);
       setItems(itemsData.sort((a, b) => a.sortOrder - b.sortOrder));
-    } catch (err: any) {
-      setError(err.message || 'Wishlist not found');
+    } catch (error: unknown) {
+      if (requestId !== requestIdRef.current) return;
+      setError(getErrorMessage(error, 'Wishlist not found'));
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) setIsLoading(false);
     }
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    const loadWishlist = window.setTimeout(() => {
+      void fetchWishlist();
+    }, 0);
+
+    return () => window.clearTimeout(loadWishlist);
+  }, [fetchWishlist]);
 
   const handleClaimItem = (itemId: string) => {
     setClaimingItemId(itemId);
@@ -71,8 +85,8 @@ export default function PublicWishlistPage() {
       setClaimingItemId(null);
       setClaimNote('');
       fetchWishlist();
-    } catch (err: any) {
-      setClaimError(err.message || 'Failed to claim item');
+    } catch (error: unknown) {
+      setClaimError(getErrorMessage(error, 'Failed to claim item'));
     } finally {
       setIsClaiming(false);
     }
@@ -89,8 +103,8 @@ export default function PublicWishlistPage() {
     try {
       await claimingApi.unclaim(itemId);
       fetchWishlist();
-    } catch (err: any) {
-      setUnclaimError(err.message || t('wishlist.unclaimFailed'));
+    } catch (error: unknown) {
+      setUnclaimError(getErrorMessage(error, t('wishlist.unclaimFailed')));
     } finally {
       setIsUnclaiming(false);
     }
@@ -101,11 +115,18 @@ export default function PublicWishlistPage() {
     : items.filter((item) => !item.claimedAt || item.id === justClaimedItemId);
 
   const formatPrice = (price: number | null, currency: string) => {
-    if (!price) return null;
+    if (price === null) return null;
     return new Intl.NumberFormat(lang === 'de' ? 'de-DE' : 'en-US', {
       style: 'currency',
       currency: currency || 'USD',
     }).format(price);
+  };
+
+  const getPurchaseCurrency = (item: Item, currency?: string) => {
+    if (currency === 'USD' && item.currency && item.currency !== 'USD') {
+      return item.currency;
+    }
+    return currency || item.currency;
   };
 
   if (isLoading) {
@@ -140,7 +161,7 @@ export default function PublicWishlistPage() {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto py-12 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0">
-          <a
+          <Link
             href="/"
             className="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 mb-6 transition-colors cursor-pointer"
           >
@@ -158,7 +179,7 @@ export default function PublicWishlistPage() {
               />
             </svg>
             {t('wishlist.backToHome')}
-          </a>
+          </Link>
 
           {/* Preferences Section */}
           {wishlist.preferences && (
@@ -199,6 +220,12 @@ export default function PublicWishlistPage() {
             </div>
           </div>
 
+          {unclaimError && (
+            <div role="alert" className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 rounded-lg">
+              {unclaimError}
+            </div>
+          )}
+
           {/* Items List */}
           {filteredItems.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -217,9 +244,12 @@ export default function PublicWishlistPage() {
                     {/* Left: Image */}
                     {item.imageUrl && (
                       <div className="md:w-48 md:flex-shrink-0">
-                        <img
+                        <Image
                           src={item.imageUrl}
                           alt={item.name}
+                          width={192}
+                          height={192}
+                          unoptimized
                           className="w-full h-48 md:h-full object-cover"
                         />
                       </div>
@@ -254,7 +284,7 @@ export default function PublicWishlistPage() {
                                   {url.label}
                                 </span>
                                 <span className="text-gray-900 dark:text-white font-bold text-lg">
-                                  {url.price ? formatPrice(url.price, url.currency || item.currency) : item.price ? formatPrice(item.price, item.currency) : ''}
+                                  {url.price !== null && url.price !== undefined ? formatPrice(url.price, getPurchaseCurrency(item, url.currency)) : item.price !== null ? formatPrice(item.price, item.currency) : ''}
                                 </span>
                               </a>
                             ))}

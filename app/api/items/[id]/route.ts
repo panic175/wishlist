@@ -114,7 +114,7 @@ export async function PATCH(
     }
 
     // Build update object (only include provided fields)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
@@ -126,6 +126,20 @@ export async function PATCH(
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
     if (purchaseUrls !== undefined) updateData.purchaseUrls = purchaseUrls;
     if (isArchived !== undefined) updateData.isArchived = isArchived;
+
+    if (currency !== undefined && currency !== existingItem[0].currency) {
+      const urls = purchaseUrls !== undefined
+        ? purchaseUrls
+        : existingItem[0].purchaseUrls;
+
+      if (Array.isArray(urls)) {
+        updateData.purchaseUrls = urls.map((purchaseUrl) =>
+          purchaseUrl.currency === existingItem[0].currency
+            ? { ...purchaseUrl, currency }
+            : purchaseUrl
+        );
+      }
+    }
 
     // Update item
     const updatedItem = await db
