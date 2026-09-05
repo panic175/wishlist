@@ -23,8 +23,11 @@ function getDb() {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    // Database file path
-    const dbPath = path.join(dbDir, 'wishlist.db');
+    // Database file path (overridable for tests via WISHLIST_DB_PATH)
+    const defaultDbPath = path.join(dbDir, 'wishlist.db');
+    const dbPath = process.env.WISHLIST_DB_PATH
+      ? path.resolve(process.cwd(), process.env.WISHLIST_DB_PATH)
+      : defaultDbPath;
 
     // Create SQLite database connection
     _sqlite = new Database(dbPath);

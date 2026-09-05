@@ -70,8 +70,8 @@ export default function CreateWishlistModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
+    <div className="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-80 flex items-center justify-center p-4 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+      <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 shadow-2xl my-auto">
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
           {t('createWishlist.title')}
         </h2>

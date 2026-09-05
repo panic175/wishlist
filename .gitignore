@@ -61,3 +61,7 @@ drizzle/
 
 # data
 /data
+
+# testing
+/test-results
+/playwright-report
