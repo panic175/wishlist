@@ -5,6 +5,8 @@ import { type Settings } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n/provider';
 import { supportedLanguages, type Language } from '@/lib/i18n/translations';
 
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'JPY'] as const;
+
 interface SettingsSectionProps {
   settings: Settings;
   onUpdate: (settings: Settings) => Promise<void>;
@@ -119,6 +121,27 @@ export default function SettingsSection({ settings, onUpdate }: SettingsSectionP
                 </select>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {t('settings.languageHint')}
+                </p>
+              </div>
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings.defaultCurrency')}
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  value={settingsForm.defaultCurrency || 'USD'}
+                  onChange={(e) =>
+                    setSettingsForm((prev) => ({ ...prev, defaultCurrency: e.target.value }))
+                  }
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {t(`currency.${c}`)}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {t('settings.defaultCurrencyHint')}
                 </p>
               </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
