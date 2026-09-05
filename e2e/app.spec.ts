@@ -59,6 +59,24 @@ test('Thalia product markup parses JSON-LD product data', () => {
   expect(result.imageUrl).toBe('https://www.thalia.de/images/product.jpg');
 });
 
+test('Thalia product markup falls back to visible German product fields', () => {
+  const $ = cheerio.load(`
+    <h1 class="titel">
+      Was ist los auf Lieselottes Bauernhof?
+      <span class="untertitel">Mein Lieselotte-Memo</span>
+    </h1>
+    <p data-test="artikelpreis">14,99 &euro;</p>
+    <meta property="og:image" content="/images/lieselotte.jpg" />
+  `);
+
+  const result = thaliaScraper.scrape($, 'https://www.thalia.de/shop/home/artikeldetails/A1075014562');
+
+  expect(result.title).toBe('Was ist los auf Lieselottes Bauernhof?');
+  expect(result.price).toBe(14.99);
+  expect(result.currency).toBe('EUR');
+  expect(result.imageUrl).toBe('https://www.thalia.de/images/lieselotte.jpg');
+});
+
 async function login(page: Page) {
   // Authelia forward-auth mode: the app trusts the proxy-injected
   // X-Forwarded-User header to bootstrap a session (see proxy.ts).

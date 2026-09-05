@@ -26,6 +26,7 @@ export const thaliaScraper: Scraper = {
     const title =
       jsonLd?.title ||
       $('[data-testid="product-title"]').first().text().trim() ||
+      $('.titel').first().contents().filter((_, element) => element.type === 'text').text().trim() ||
       $('h1').first().text().trim() ||
       $('meta[property="og:title"]').attr('content') ||
       null;
@@ -43,6 +44,7 @@ export const thaliaScraper: Scraper = {
       const priceText =
         $('[data-testid="product-price"]').first().text() ||
         $('[data-testid="price"]').first().text() ||
+        $('[data-test="artikelpreis"]').first().text() ||
         $('.product-price').first().text() ||
         $('[itemprop="price"]').first().text();
 
