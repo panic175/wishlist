@@ -76,7 +76,7 @@ export default function ItemCard({
             )}
             {item.price && (
               <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
-                ${item.price.toFixed(2)} {item.currency}
+                {item.price.toFixed(2)} {item.currency}
               </p>
             )}
           </div>
