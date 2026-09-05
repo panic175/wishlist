@@ -131,6 +131,84 @@ export async function initializeDatabase() {
       console.log('Migration already applied or not needed');
     }
 
+    // Backfill per-URL pricing for existing items (one-time migration).
+    // Copies item-level price/currency/image into each purchase_urls entry
+    // that is missing them, so the public page can render per-URL prices.
+    try {
+      const backfillMarker = sqlite
+        .prepare(`SELECT 1 FROM settings WHERE key = 'purchaseUrlsBackfilled'`)
+        .get();
+
+      if (!backfillMarker) {
+        const rows = sqlite
+          .prepare(
+            `SELECT id, price, currency, images, purchase_urls
+             FROM wishlist_items
+             WHERE purchase_urls IS NOT NULL AND purchase_urls != ''`
+          )
+          .all() as Array<{
+          id: string;
+          price: number | null;
+          currency: string | null;
+          images: string | null;
+          purchase_urls: string;
+        }>;
+
+        const update = sqlite.prepare(
+          `UPDATE wishlist_items SET purchase_urls = ?, updated_at = unixepoch() WHERE id = ?`
+        );
+        let changed = 0;
+
+        for (const row of rows) {
+          let urls: Array<Record<string, unknown>>;
+          try {
+            urls = JSON.parse(row.purchase_urls);
+          } catch {
+            continue;
+          }
+          if (!Array.isArray(urls)) continue;
+
+          let dirty = false;
+          for (const entry of urls) {
+            if (
+              (entry.price === undefined || entry.price === null) &&
+              typeof row.price === 'number'
+            ) {
+              entry.price = row.price;
+              dirty = true;
+            }
+            if (!entry.currency) {
+              entry.currency = row.currency || 'USD';
+              dirty = true;
+            }
+            if ((entry.imageUrl === undefined || entry.imageUrl === null) && row.images) {
+              entry.imageUrl = row.images;
+              dirty = true;
+            }
+          }
+
+          if (dirty) {
+            update.run(JSON.stringify(urls), row.id);
+            changed += 1;
+          }
+        }
+
+        if (changed > 0) {
+          console.log(`✅ Backfilled per-URL pricing for ${changed} item(s)`);
+        }
+
+        sqlite
+          .prepare(
+            `INSERT INTO settings (id, key, value, updated_at)
+             VALUES ('migration-purchaseUrlsPrice', 'purchaseUrlsBackfilled', '1', unixepoch())
+             ON CONFLICT(key) DO NOTHING`
+          )
+          .run();
+      }
+    } catch (backfillError) {
+      console.log('Per-URL price backfill already applied or not needed');
+    }
+
     // Auto-seed database if empty
     const { seedDatabase } = await import('./seed');
     await seedDatabase();
