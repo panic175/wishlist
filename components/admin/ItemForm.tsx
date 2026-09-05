@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import ImageUpload from '@/components/image-upload';
 import PurchaseUrlFields from './PurchaseUrlFields';
-import { type Item } from '@/lib/api';
+import { scrapingApi, type Item } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n/provider';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'JPY'] as const;
@@ -31,6 +31,52 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
   );
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState('');
+
+  const hostnameLabel = (url: string) => {
+    try {
+      return new URL(url).hostname.replace('www.', '');
+    } catch {
+      return url;
+    }
+  };
+
+  const handleScrape = async () => {
+    if (!scrapeUrl) return;
+    setIsScraping(true);
+    setScrapeError('');
+    try {
+      const normalizedUrl = scrapeUrl.startsWith('http') ? scrapeUrl : `https://${scrapeUrl}`;
+      const data = await scrapingApi.scrapeUrl(scrapeUrl);
+
+      setFormData((prev) => ({
+        ...prev,
+        name: data.title || prev.name,
+        description: data.description || prev.description,
+        price: data.price ?? prev.price,
+        currency: data.currency || prev.currency,
+        imageUrl: data.imageUrl || prev.imageUrl,
+        purchaseUrls: prev.purchaseUrls?.some((u) => u.url === normalizedUrl)
+          ? prev.purchaseUrls
+          : [
+              ...(prev.purchaseUrls || []),
+              {
+                label: hostnameLabel(normalizedUrl),
+                url: normalizedUrl,
+                price: data.price ?? null,
+                currency: data.currency || prev.currency || 'USD',
+                imageUrl: data.imageUrl || null,
+              },
+            ],
+      }));
+    } catch (err) {
+      setScrapeError(err instanceof Error ? err.message : t('itemForm.scrapeFailed'));
+    } finally {
+      setIsScraping(false);
+    }
+  };
 
   useEffect(() => {
     if (mode !== 'create') return;
@@ -76,6 +122,36 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 rounded-lg text-base">
           {error}
+        </div>
+      )}
+      {mode === 'create' && (
+        <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+          <h6 className="text-base font-medium text-indigo-900 dark:text-indigo-300 mb-1">
+            {t('itemForm.autoFillTitle')}
+          </h6>
+          <p className="text-sm text-indigo-700 dark:text-indigo-400 mb-2">
+            {t('itemForm.autoFillHint')}
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={scrapeUrl}
+              onChange={(e) => setScrapeUrl(e.target.value)}
+              placeholder={t('itemForm.scrapePlaceholder')}
+              className="flex-1 px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={handleScrape}
+              disabled={isScraping || !scrapeUrl}
+              className="px-4 py-2 text-base bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isScraping ? t('itemForm.scraping') : t('itemForm.scrape')}
+            </button>
+          </div>
+          {scrapeError && (
+            <p className="mt-2 text-sm text-red-700 dark:text-red-400">{scrapeError}</p>
+          )}
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

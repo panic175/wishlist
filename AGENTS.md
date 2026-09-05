@@ -56,9 +56,10 @@ lib/
   db/schema.ts                # Drizzle schema (wishlists, wishlist_items, settings)
   db/seed.ts                  # sample data
   scraping/                   # product URL scrapers (registry pattern)
-    index.ts                  # registry: matches(url) -> scraper, generic fallback
-    scrapers/*.ts             # one module per site (amazon, target, walmart, bestbuy, generic)
-    service.ts                # legacy if/else version (refactored into registry)
+    index.ts                  # registry entry: scrapeUrl(), matches(url) -> scraper, generic fallback
+    types.ts                  # Scraper interface + ScrapedData shape
+    utils.ts                  # shared fetchHtml/extractPrice helpers
+    scrapers/*.ts             # one module per site (amazon, target, walmart, bestbuy, generic, index)
   i18n/                       # UI translation system
     translations.ts           # en + de dictionaries
     provider.tsx              # LanguageProvider context with t()

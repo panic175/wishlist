@@ -71,6 +71,14 @@ export interface Wishlist {
   updatedAt: string;
 }
 
+export interface PurchaseUrl {
+  label: string;
+  url: string;
+  price?: number | null;
+  currency?: string;
+  imageUrl?: string | null;
+}
+
 export interface Item {
   id: string;
   wishlistId: string;
@@ -80,7 +88,7 @@ export interface Item {
   currency: string;
   quantity: number;
   imageUrl: string | null;
-  purchaseUrls: Array<{ label: string; url: string }> | null;
+  purchaseUrls: PurchaseUrl[] | null;
   isArchived: boolean;
   claimedByName: string | null;
   claimedByNote: string | null;
@@ -265,6 +273,7 @@ export interface ScrapedData {
   price?: number;
   currency?: string;
   imageUrl?: string;
+  url?: string;
 }
 
 export const scrapingApi = {
@@ -277,7 +286,8 @@ export const scrapingApi = {
       credentials: 'include',
       body: JSON.stringify({ url }),
     });
-    return handleResponse<ScrapedData>(response);
+    const result = await handleResponse<{ success: boolean; data: ScrapedData }>(response);
+    return result.data;
   },
 };
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth/utils';
-import { scrapeUrl } from '@/lib/scraping/service';
+import { scrapeUrl } from '@/lib/scraping';
 
 export async function POST(request: NextRequest) {
   try {
