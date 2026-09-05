@@ -23,11 +23,13 @@ import {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // The login page must render for unauthenticated users (legacy form or the
-  // Authelia portal link) instead of redirecting, so it skips the gate.
-  if (pathname === '/admin/login') {
-    return NextResponse.next();
-  }
+  // The login page must render for unauthenticated users (legacy form or
+  // after the Authelia portal redirects back) instead of looping, so the
+  // anonymous case always passes through. The Authelia handshake below still
+  // provisions a session when the trusted header is present, so the portal's
+  // redirect back to /admin/login lands logged in and the app re-directs to
+  // /admin.
+  const isLogin = pathname === '/admin/login';
 
   // Existing valid session.
   const token = request.cookies.get('access_token')?.value;
@@ -49,8 +51,8 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  if (pathname === '/api/auth/me') {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  if (isLogin || pathname === '/api/auth/me') {
+    return NextResponse.next();
   }
 
   return NextResponse.redirect(new URL('/admin/login', request.url));

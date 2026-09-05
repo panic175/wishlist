@@ -33,8 +33,7 @@ export default defineConfig({
       WISHLIST_DB_PATH: './data/db/e2e.db',
       AUTHELIA_ENABLED: 'true',
       AUTHELIA_USER_HEADER: 'X-Forwarded-User',
-      NEXT_PUBLIC_AUTHELIA_ENABLED: 'true',
-      NEXT_PUBLIC_AUTHELIA_PORTAL_URL: 'https://auth.example.com',
+      AUTHELIA_PORTAL_URL: 'https://auth.example.com',
     },
   },
 });

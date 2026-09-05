@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useTheme } from '@/components/theme-provider';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/i18n/provider';
@@ -17,12 +16,12 @@ export default function Footer() {
           <p>{t('footer.builtFor')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/admin/login"
+          <a
+            href="/admin"
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
             {t('footer.admin')}
-          </Link>
+          </a>
           {isAuthenticated && (
             <>
               <span className="text-gray-400">•</span>

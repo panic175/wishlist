@@ -140,8 +140,7 @@ the app converts into its own session.
 ```env
 AUTHELIA_ENABLED=true
 AUTHELIA_USER_HEADER=X-Forwarded-User   # header the proxy sets after Authelia auth
-NEXT_PUBLIC_AUTHELIA_ENABLED=true       # shows the "Continue with Authelia" login page
-NEXT_PUBLIC_AUTHELIA_PORTAL_URL=https://auth.example.com
+AUTHELIA_PORTAL_URL=https://auth.example.com   # shown on the admin login page
 ```
 
 When enabled:
@@ -150,19 +149,62 @@ When enabled:
 - Any verified Authelia user can manage wishlists, so restriction rules should
   be defined in Authelia (the app does not enforce roles).
 
-Traefik + forward-auth example:
+These **runtime** env vars are read by `proxy.ts`, `/api/auth/login` and the
+admin login page — no build-time `NEXT_PUBLIC_*` values are required, so a
+single prebuilt image works for both Authelia and standalone deployments.
+
+### Traefik + Authelia (docker providers)
+
+This app ships a second `wishlist-admin` Traefik router that runs `/admin`
+through Authelia while leaving the public site (`/` and `/[slug]`) fully open.
+The forward-auth middleware is defined in labels on your Authelia container
+(hence `authelia@docker`), so no file-provider middleware is needed.
+
+On the **Authelia** container, expose a forward-auth middleware:
 
 ```yaml
 labels:
-  traefik.http.routers.wishlist.middlewares: authelia@docker
+  traefik.http.middlewares.authelia.forwardauth.address: http://authelia:9091/api/authz/forward-auth
+  traefik.http.middlewares.authelia.forwardauth.trustForwardHeader: "true"
+  traefik.http.middlewares.authelia.forwardauth.authResponseHeaders: X-Forwarded-User
 ```
 
-With the standard Authelia forward-auth middleware, **the proxy must strip any
-client-supplied `X-Forwarded-User` header and set it only after Authelia
-validates the session** — otherwise a visitor could forge their identity.
+`trustForwardHeader: true` makes Traefik **always overwrite** a client-supplied
+`X-Forwarded-User` with the value Authelia verified, so a visitor cannot forge
+their identity — this is what satisfies the header-trust requirement.
 
-Exact proxy/header configuration depends on your reverse proxy; see the
-Authelia "Forward auth" documentation.
+On the **wishlist** container, the two routers (see `docker-compose.yml`). The
+domain comes from the `WISHLIST_DOMAIN` env var (defaults to `wishlist.example.com`):
+
+```yaml
+labels:
+  # public: fully open
+  - "traefik.http.routers.wishlist.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`)"
+  # admin: behind Authelia, higher priority
+  - 'traefik.http.routers.wishlist-admin.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`) && PathRegexp(`^/admin(?:/.*)?$`)'
+  - "traefik.http.routers.wishlist-admin.middlewares=authelia@docker,secHeaders@file,localIpWhitelist@file"
+  - "traefik.http.routers.wishlist-admin.priority=10"
+```
+
+In your Authelia `configuration.yml`, restrict the admin area (default policy is
+normally `deny`, with a `bypass` rule for the public wishlist site):
+
+```yaml
+access_control:
+  default_policy: deny
+  rules:
+    - domain: wishlist.example.com
+      resources:
+        - '^/admin(/.*)?$'
+      policy: one_factor   # or two_factor
+```
+
+The `example.com` domains above are placeholders — replace them or set
+`WISHLIST_DOMAIN` in `.env` next to your compose file.
+
+**Important:** the app code (this repo) must be baked into the image you deploy
+`AUTHELIA_ENABLED` etc. only take effect in a build that includes `proxy.ts` and
+`lib/auth/authelia.ts`.
 
 ## Development
 
