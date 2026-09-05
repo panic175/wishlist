@@ -24,20 +24,22 @@ services:
       - /opt/docker/wishlist/data:/app/data
     labels:
       - "traefik.enable=true"
-      # Public router (fully open - wishlist viewing and claiming stay public)
+      # Public router (fully open - wishlist viewing and claiming stay public).
+      # /admin and everything under it is excluded so the wishlist-admin router
+      # below is the ONLY one that matches the admin area (exclusive split -
+      # no priority contest between the two routers).
       - "traefik.http.routers.wishlist.entrypoints=websecure"
-      - 'traefik.http.routers.wishlist.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`)'
+      - 'traefik.http.routers.wishlist.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`) && !PathRegexp(`^/admin(?:/.*)?$$`)'
       - "traefik.http.routers.wishlist.tls=true"
       - "traefik.http.routers.wishlist.service=wishlist"
-      # Admin router - behind Authelia forward-auth, higher priority than the
-      # public router. authelia@docker is defined in labels on the Authelia
-      # container (which must be on the same 'web' network).
+      # Admin router - behind Authelia forward-auth. authelia@docker is defined
+      # in labels on the Authelia container (which must be on the same 'web'
+      # network). Only /admin and subpaths reach this router.
       - "traefik.http.routers.wishlist-admin.entrypoints=websecure"
       - 'traefik.http.routers.wishlist-admin.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`) && PathRegexp(`^/admin(?:/.*)?$$`)'
       - "traefik.http.routers.wishlist-admin.tls=true"
       - "traefik.http.routers.wishlist-admin.service=wishlist"
       - "traefik.http.routers.wishlist-admin.middlewares=authelia@docker,secHeaders@file,localIpWhitelist@file"
-      - "traefik.http.routers.wishlist-admin.priority=10"
       # Shared service (same backend for both routers)
       - "traefik.http.services.wishlist.loadbalancer.server.port=3000"
       - "traefik.docker.network=web"
