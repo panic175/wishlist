@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
         message: 'Password verified',
       });
 
+      // Readable by client components so PasswordLockGuard can bypass the
+      // redirect after the site has been unlocked. It is a non-secret flag.
       response.cookies.set('site_unlocked', 'true', {
-        httpOnly: true,
+        httpOnly: false,
         secure: isSecureCookie(request),
         sameSite: 'lax',
         maxAge: 60 * 60 * 24,
