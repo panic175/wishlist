@@ -65,3 +65,4 @@ drizzle/
 # testing
 /test-results
 /playwright-report
+docker-compose.traefik.yml
