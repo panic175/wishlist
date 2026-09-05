@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ImageUpload from '@/components/image-upload';
 import PurchaseUrlFields from './PurchaseUrlFields';
 import { type Item } from '@/lib/api';
+import { useLanguage } from '@/lib/i18n/provider';
 
 interface ItemFormProps {
   item?: Partial<Item>;
@@ -14,6 +15,7 @@ interface ItemFormProps {
 }
 
 export default function ItemForm({ item, onSubmit, onCancel, mode, error }: ItemFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<Partial<Item>>(
     item || {
       name: '',
@@ -45,7 +47,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
       className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
     >
       <h5 className="text-base font-medium text-gray-900 dark:text-white mb-3">
-        {mode === 'create' ? 'Add New Item' : 'Edit Item'}
+        {mode === 'create' ? t('itemForm.addNewItem') : t('itemForm.editItem')}
       </h5>
       {error && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-400 rounded-lg text-base">
@@ -55,7 +57,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Name *
+            {t('itemForm.name')}
           </label>
           <input
             type="text"
@@ -69,7 +71,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
         </div>
         <div>
           <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Price
+            {t('itemForm.price')}
           </label>
           <input
             type="number"
@@ -86,7 +88,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
         </div>
         <div className="md:col-span-2">
           <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Description
+            {t('itemForm.description')}
           </label>
           <textarea
             rows={2}
@@ -105,7 +107,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
             }
             onUploadStateChange={setIsImageUploading}
             type="item"
-            label="Item Image"
+            label={t('itemForm.itemImage')}
           />
         </div>
         <div className="md:col-span-2">
@@ -123,14 +125,14 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
           onClick={onCancel}
           className="px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
         >
-          Cancel
+          {t('cancel')}
         </button>
         <button
           type="submit"
           disabled={isImageUploading || isSubmitting}
           className="px-4 py-2 text-base bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isImageUploading ? 'Uploading...' : isSubmitting ? 'Saving...' : mode === 'create' ? 'Add Item' : 'Save'}
+          {isImageUploading ? t('uploading') : isSubmitting ? t('saving') : mode === 'create' ? t('itemForm.addItemBtn') : t('save')}
         </button>
       </div>
     </form>

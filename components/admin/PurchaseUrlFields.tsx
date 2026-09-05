@@ -1,3 +1,7 @@
+'use client';
+
+import { useLanguage } from '@/lib/i18n/provider';
+
 interface PurchaseUrl {
   label: string;
   url: string;
@@ -9,6 +13,8 @@ interface PurchaseUrlFieldsProps {
 }
 
 export default function PurchaseUrlFields({ purchaseUrls, onChange }: PurchaseUrlFieldsProps) {
+  const { t } = useLanguage();
+
   const handleAdd = () => {
     onChange([...purchaseUrls, { label: '', url: '' }]);
   };
@@ -26,14 +32,14 @@ export default function PurchaseUrlFields({ purchaseUrls, onChange }: PurchaseUr
   return (
     <div>
       <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-        Purchase URLs
+        {t('urls.title')}
       </label>
       <div className="space-y-2">
         {purchaseUrls.map((urlObj, index) => (
           <div key={index} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start">
             <input
               type="text"
-              placeholder="Label (e.g., Amazon)"
+              placeholder={t('urls.labelPlaceholder')}
               value={urlObj.label}
               onChange={(e) => handleUpdate(index, 'label', e.target.value)}
               className="w-full sm:w-1/3 px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
@@ -49,7 +55,7 @@ export default function PurchaseUrlFields({ purchaseUrls, onChange }: PurchaseUr
               type="button"
               onClick={() => handleRemove(index)}
               className="px-2 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded cursor-pointer"
-              title="Remove URL"
+              title={t('urls.removeUrl')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -62,7 +68,7 @@ export default function PurchaseUrlFields({ purchaseUrls, onChange }: PurchaseUr
           onClick={handleAdd}
           className="w-full px-3 py-2 text-base border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
         >
-          + Add URL
+          {t('urls.addUrl')}
         </button>
       </div>
     </div>

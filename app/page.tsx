@@ -7,8 +7,10 @@ import Header from '@/components/header';
 import Footer from '@/components/footer';
 import PasswordLockGuard from '@/components/password-lock-guard';
 import ShareButton from '@/components/share-button';
+import { useLanguage } from '@/lib/i18n/provider';
 
 export default function Home() {
+  const { t, lang } = useLanguage();
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState<Settings>({ siteTitle: 'Wishlist', homepageSubtext: 'Browse and explore available wishlists' });
@@ -47,8 +49,8 @@ export default function Home() {
           subtitle={settings.homepageSubtext}
           actions={
             <ShareButton
-              title="Check out this wishlist!"
-              text="I thought you might be interested in this wishlist."
+              title={t('share.title')}
+              text={lang === 'de' ? 'Ich dachte, diese Wunschliste könnte dich interessieren.' : 'I thought you might be interested in this wishlist.'}
             />
           }
         />
@@ -58,11 +60,11 @@ export default function Home() {
           <div className="px-4 sm:px-0">
             {isLoading ? (
               <div className="text-center py-12">
-                <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
               </div>
             ) : wishlists.length === 0 ? (
               <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-                <p className="text-gray-500 dark:text-gray-400">No public wishlists available yet</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('home.noWishlists')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-6">

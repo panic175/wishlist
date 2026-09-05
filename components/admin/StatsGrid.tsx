@@ -1,3 +1,7 @@
+'use client';
+
+import { useLanguage } from '@/lib/i18n/provider';
+
 interface Stats {
   totalWishlists: number;
   publicWishlists: number;
@@ -9,6 +13,8 @@ interface StatsGridProps {
 }
 
 export default function StatsGrid({ stats }: StatsGridProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-8">
       <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
@@ -18,7 +24,7 @@ export default function StatsGrid({ stats }: StatsGridProps) {
             <div className="ml-4 w-0 flex-1">
               <dl>
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Total Wishlists
+                  {t('stats.totalWishlists')}
                 </dt>
                 <dd className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalWishlists}
@@ -36,7 +42,7 @@ export default function StatsGrid({ stats }: StatsGridProps) {
             <div className="ml-4 w-0 flex-1">
               <dl>
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Public Wishlists
+                  {t('stats.publicWishlists')}
                 </dt>
                 <dd className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.publicWishlists}
@@ -54,7 +60,7 @@ export default function StatsGrid({ stats }: StatsGridProps) {
             <div className="ml-4 w-0 flex-1">
               <dl>
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400 truncate">
-                  Total Items
+                  {t('stats.totalItems')}
                 </dt>
                 <dd className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalItems}

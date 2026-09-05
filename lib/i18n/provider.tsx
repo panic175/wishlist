@@ -10,7 +10,15 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue>({
   lang: 'en',
-  t: (key) => key,
+  t: (key, vars) => {
+    let str = dictionary.en[key] ?? key;
+    if (vars) {
+      for (const [k, v] of Object.entries(vars)) {
+        str = str.replace(`{${k}}`, String(v));
+      }
+    }
+    return str;
+  },
 });
 
 export function useLanguage() {
@@ -32,7 +40,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             setLang(settingLang);
           }
         }
-      } catch (err) {
+      } catch {
         // Fall back to English on error
       }
     })();

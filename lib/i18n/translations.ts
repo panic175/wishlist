@@ -79,8 +79,10 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'settings.edit': 'Edit Settings',
     'settings.save': 'Save Settings',
     'settings.siteTitle': 'Site Title',
+    'settings.siteTitlePlaceholder': 'Wishlist',
     'settings.siteTitleHint': 'This is used for the page title and homepage header',
     'settings.homepageSubtext': 'Homepage Subtext',
+    'settings.homepageSubtextPlaceholder': 'Browse and explore available wishlists',
     'settings.homepageSubtextHint': 'This appears below the title on the homepage',
     'settings.passwordLock': 'Enable Password Lock',
     'settings.passwordLockHint': 'When enabled, visitors must enter a password to access the website',
@@ -231,6 +233,26 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'currency.AUD': 'AUD - Australian Dollar',
     'currency.CHF': 'CHF - Swiss Franc',
     'currency.JPY': 'JPY - Japanese Yen',
+
+    // Rich text editor
+    'editor.bold': 'Bold',
+    'editor.italic': 'Italic',
+    'editor.underline': 'Underline',
+    'editor.heading2': 'Heading 2',
+    'editor.heading3': 'Heading 3',
+    'editor.bulletList': 'Bullet List',
+    'editor.numberedList': 'Numbered List',
+    'editor.insertLink': 'Insert Link',
+    'editor.link': 'Link',
+    'editor.linkText': 'Link Text',
+    'editor.optional': '(optional)',
+    'editor.url': 'URL *',
+    'editor.clickHere': 'Click here',
+    'editor.enterText': 'Enter text...',
+
+    // Theme / footer
+    'theme.toggle': 'Toggle theme',
+    'footer.ghRepo': 'GitHub Repository',
   },
   de: {
     // Generic / shared
@@ -306,8 +328,10 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'settings.edit': 'Einstellungen bearbeiten',
     'settings.save': 'Einstellungen speichern',
     'settings.siteTitle': 'Website-Titel',
+    'settings.siteTitlePlaceholder': 'Wunschliste',
     'settings.siteTitleHint': 'Wird für Seitentitel und Kopfzeile der Startseite verwendet',
     'settings.homepageSubtext': 'Untertitel der Startseite',
+    'settings.homepageSubtextPlaceholder': 'Wunschlisten durchsuchen und entdecken',
     'settings.homepageSubtextHint': 'Erscheint unter dem Titel auf der Startseite',
     'settings.passwordLock': 'Passwortsperre aktivieren',
     'settings.passwordLockHint': 'Wenn aktiviert, müssen Besucher ein Passwort eingeben, um auf die Website zuzugreifen',
@@ -458,6 +482,26 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'currency.AUD': 'AUD – Australischer Dollar',
     'currency.CHF': 'CHF – Schweizer Franken',
     'currency.JPY': 'JPY – Japanischer Yen',
+
+    // Rich text editor
+    'editor.bold': 'Fett',
+    'editor.italic': 'Kursiv',
+    'editor.underline': 'Unterstrichen',
+    'editor.heading2': 'Überschrift 2',
+    'editor.heading3': 'Überschrift 3',
+    'editor.bulletList': 'Aufzählungsliste',
+    'editor.numberedList': 'Nummerierte Liste',
+    'editor.insertLink': 'Link einfügen',
+    'editor.link': 'Link',
+    'editor.linkText': 'Linktext',
+    'editor.optional': '(optional)',
+    'editor.url': 'URL *',
+    'editor.clickHere': 'Hier klicken',
+    'editor.enterText': 'Text eingeben...',
+
+    // Theme / footer
+    'theme.toggle': 'Design umschalten',
+    'footer.ghRepo': 'GitHub-Repository',
   },
 };
 
