@@ -3,6 +3,12 @@ import { test, expect, type Page } from '@playwright/test';
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'e2e-pass';
 
+// 1x1 transparent PNG for upload tests (the upload route only checks MIME type).
+const PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64'
+);
+
 async function login(page: Page) {
   // Authelia forward-auth mode: the app trusts the proxy-injected
   // X-Forwarded-User header to bootstrap a session (see proxy.ts).
@@ -346,4 +352,353 @@ test('import CSV requires the name column and valid csv', async ({ page }) => {
   expect(noBody.status()).toBe(400);
 
   await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('visitor can claim and unclaim an item on the public page', async ({ page }) => {
+  await login(page);
+
+  const slug = `claim-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Claim Test List', slug);
+  const item = await createItem(page, wishlist.wishlist.id, {
+    name: 'Claimable Headphones',
+    price: 45,
+  });
+
+  await page.goto(`/${slug}`);
+  await expect(page.getByText('Claimable Headphones')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Claim This Item' }).click();
+  await page.locator(`#claim-note-${item.item.id}`).fill('Buying this next week');
+  await page.getByRole('button', { name: 'Confirm Claim' }).click();
+
+  await expect(page.getByText('Item Claimed!')).toBeVisible();
+
+  // The claim is persisted in the API.
+  const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+  const { items } = (await itemsRes.json()) as {
+    items: Array<{ claimedAt: string | null; claimedByNote: string | null }>;
+  };
+  expect(items[0].claimedAt).toBeTruthy();
+  expect(items[0].claimedByNote).toBe('Buying this next week');
+
+  // Reload to clear the client-side success state; the item now renders as
+  // claimed with an unclaim action under "Show claimed items".
+  await page.reload();
+
+  page.once('dialog', (d) => d.accept());
+  await page.getByLabel('Show claimed items').check();
+  await page.getByRole('button', { name: 'Unclaim Item' }).click();
+
+  await expect(page.getByRole('button', { name: 'Claim This Item' })).toBeVisible();
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('admin APIs reject anonymous requests while public endpoints stay open', async ({ page }) => {
+  // Public endpoints that must remain open.
+  const publicLists = await page.request.get('/api/public/wishlists');
+  expect(publicLists.ok()).toBe(true);
+  const { wishlists } = (await publicLists.json()) as {
+    wishlists: Array<{ id: string; slug: string }>;
+  };
+  const dad = wishlists.find((w) => w.slug === 'dads-wishlist');
+  expect(dad).toBeTruthy();
+
+  const settings = await page.request.get('/api/settings');
+  expect(settings.ok()).toBe(true);
+
+  const itemsRes = await page.request.get(`/api/wishlists/${dad!.id}/items`);
+  expect(itemsRes.ok()).toBe(true);
+  const { items } = (await itemsRes.json()) as { items: Array<{ id: string }> };
+  expect(items.length).toBeGreaterThan(0);
+
+  expect((await page.request.get(`/api/items/${items[0].id}`)).ok()).toBe(true);
+  expect((await page.request.get(`/api/${dad!.slug}`)).ok()).toBe(true);
+
+  // Every admin/mutation endpoint must reject the anonymous session.
+  const adminCalls: Array<[string, 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', unknown]> = [
+    ['/api/wishlists', 'GET', undefined],
+    ['/api/wishlists', 'POST', { name: 'x', slug: 'x' }],
+    [`/api/wishlists/${dad!.id}`, 'GET', undefined],
+    [`/api/wishlists/${dad!.id}`, 'PATCH', { name: 'x' }],
+    [`/api/wishlists/${dad!.id}`, 'DELETE', undefined],
+    [`/api/wishlists/${dad!.id}/items`, 'POST', { name: 'x' }],
+    [`/api/items/${items[0].id}`, 'PATCH', { name: 'x' }],
+    [`/api/items/${items[0].id}`, 'DELETE', undefined],
+    [`/api/items/${items[0].id}/reorder`, 'POST', { newSortOrder: 0 }],
+    [`/api/wishlists/${dad!.id}/reorder`, 'POST', { newSortOrder: 0 }],
+    ['/api/settings', 'PUT', { siteTitle: 'x' }],
+    ['/api/scrape', 'POST', { url: 'https://example.com' }],
+  ];
+  for (const [url, method, body] of adminCalls) {
+    const options: { method: string; data?: unknown } = { method };
+    if (body !== undefined) options.data = body;
+    const response = await page.request.fetch(url, options);
+    expect(response.status(), `${method} ${url}`).toBe(401);
+  }
+
+  // In Authelia mode the built-in login endpoint is disabled entirely.
+  const legacyLogin = await page.request.post('/api/auth/login', {
+    data: { username: ADMIN_USER, password: ADMIN_PASS },
+  });
+  expect(legacyLogin.status()).toBe(403);
+});
+
+test('password lock gates the public pages and unlocks after the site password', async ({ page }) => {
+  await login(page);
+
+  const origRes = await page.request.get('/api/settings');
+  const { settings: original } = (await origRes.json()) as {
+    settings: { passwordLockEnabled: boolean };
+  };
+
+  try {
+    const enable = await page.request.put('/api/settings', {
+      data: { passwordLockEnabled: true, passwordLock: 'e2e-lock-pass' },
+    });
+    expect(enable.ok()).toBe(true);
+
+    await page.goto('/');
+    await expect(page).toHaveURL(/\/lock$/);
+    await expect(page.getByRole('heading', { name: 'Password Required' })).toBeVisible();
+
+    // Wrong password shows an error.
+    await page.locator('#password').fill('nope');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(page.getByText('Incorrect password')).toBeVisible();
+
+    // Correct password unlocks and returns to the home page.
+    await page.locator('#password').fill('e2e-lock-pass');
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('body')).toContainText('Built for families');
+  } finally {
+    await page.request.put('/api/settings', {
+      data: { passwordLockEnabled: original.passwordLockEnabled ?? false },
+    });
+  }
+});
+
+test('admin can create, edit, and delete an item through the UI', async ({ page }) => {
+  await login(page);
+  const slug = `ui-items-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'UI Items Test', slug);
+
+  const itemName = `UI Item ${Date.now()}`;
+  const updatedName = `${itemName} renamed`;
+
+  await page.goto('/admin');
+  await expandWishlist(page, 'UI Items Test');
+
+  await page.getByRole('button', { name: /add item/i }).click();
+  let form = page.locator('form').first();
+
+  await form.locator('input[type="text"]').first().fill(itemName);
+  await form.locator('input[type="number"]').first().fill('19.99');
+  await form.locator('textarea').fill('A UI-created item');
+  await form.getByRole('button', { name: /^add item$/i }).click();
+
+  await expect(page.locator('h5', { hasText: itemName })).toBeVisible();
+
+  // Edit the item name.
+  await page.getByTitle('Edit item').click();
+  form = page.locator('form').first();
+  await form.locator('input[type="text"]').first().fill(updatedName);
+  await form.getByRole('button', { name: /^save$/i }).click();
+
+  await expect(page.locator('h5', { hasText: updatedName })).toBeVisible();
+
+  // Delete the item via the confirm dialog.
+  page.once('dialog', (d) => d.accept());
+  await page.getByTitle('Delete item').click();
+
+  await expect(page.locator('h5')).toHaveCount(0);
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('reordering items and wishlists persists across refetches', async ({ page }) => {
+  await login(page);
+  const stamp = Date.now();
+  const wlA = await createWishlist(page, `Reorder A ${stamp}`, `reorder-a-${stamp}`);
+  const wlB = await createWishlist(page, `Reorder B ${stamp}`, `reorder-b-${stamp}`);
+
+  const i1 = await createItem(page, wlA.wishlist.id, { name: 'First', price: 1 });
+  const i2 = await createItem(page, wlA.wishlist.id, { name: 'Second', price: 2 });
+  const i3 = await createItem(page, wlA.wishlist.id, { name: 'Third', price: 3 });
+
+  await page.goto('/admin');
+
+  // Wishlists: move B above A (the click fires an async reorder + refetch, so
+// poll the API until the new order is persisted).
+  const cardB = page.locator('div.rounded-lg', {
+    has: page.getByRole('heading', { name: `Reorder B ${stamp}` }),
+  });
+  await cardB.getByTitle('Move up').click();
+
+  await expect.poll(async () => {
+    const res = await page.request.get('/api/wishlists');
+    const { wishlists } = (await res.json()) as { wishlists: Array<{ id: string }> };
+    const order = wishlists.map((w) => w.id);
+    return order.indexOf(wlB.wishlist.id) < order.indexOf(wlA.wishlist.id);
+  }).toBe(true);
+
+  // Items: move 'Third' up twice so it lands first. Wait on the DOM between
+  // moves so the second click sees the post-refetch state, then verify the API.
+  await expandWishlist(page, `Reorder A ${stamp}`);
+  const cardA = page.locator('div.rounded-lg', {
+    has: page.getByRole('heading', { name: `Reorder A ${stamp}` }),
+  });
+  const thirdItem = cardA.locator('div.rounded', {
+    has: page.locator('h5', { hasText: 'Third' }),
+  });
+  const itemCards = cardA.locator('div.rounded');
+
+  await thirdItem.getByTitle('Move up').click();
+  await expect(itemCards.nth(1).locator('h5')).toContainText('Third');
+
+  await thirdItem.getByTitle('Move up').click();
+  await expect(itemCards.nth(0).locator('h5')).toContainText('Third');
+
+  await expect.poll(async () => {
+    const res = await page.request.get(`/api/wishlists/${wlA.wishlist.id}/items`);
+    const { items } = (await res.json()) as { items: Array<{ id: string }> };
+    return items.map((i) => i.id).join(',') === [i3.item.id, i1.item.id, i2.item.id].join(',');
+  }).toBe(true);
+
+  await deleteWishlist(page, wlB.wishlist.id);
+  await deleteWishlist(page, wlA.wishlist.id);
+});
+
+test('refreshing a purchase URL updates the item price from scraped data', async ({ page }) => {
+  await login(page);
+  const slug = `refresh-ok-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Refresh OK Test List', slug);
+  const item = await createItem(page, wishlist.wishlist.id, {
+    name: 'Smart Light',
+    price: 40,
+    currency: 'USD',
+    purchaseUrls: [{ label: 'Light Store', url: 'https://lights.example.com/smart', price: 40, currency: 'USD' }],
+  });
+
+  await page.route('**/api/items/*/refresh', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: { price: 55, currency: 'EUR', imageUrl: '/uploads/items/refreshed.webp' },
+        item: {
+          id: item.item.id,
+          name: 'Smart Light',
+          price: 55,
+          currency: 'EUR',
+          imageUrl: '/uploads/items/refreshed.webp',
+          purchaseUrls: [{ label: 'Light Store', url: 'https://lights.example.com/smart', price: 55, currency: 'EUR' }],
+        },
+      }),
+    })
+  );
+
+  await page.goto('/admin');
+  await expandWishlist(page, 'Refresh OK Test List');
+  await page.getByTitle('Edit item').click();
+
+  await page.getByRole('button', { name: 'Update price & image' }).first().click();
+
+  const form = page.locator('form').first();
+  await expect(form.locator('input[type="number"]').first()).toHaveValue('55');
+
+  await form.getByRole('button', { name: /^save$/i }).click();
+
+  // The save handler is async and not awaited by the click, so poll the API
+  // until the refreshed price is persisted, then assert the rest of the record.
+  await expect.poll(async () => {
+    const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+    const { items } = (await itemsRes.json()) as { items: Array<{ price: number | null }> };
+    return items[0]?.price;
+  }).toBe(55);
+
+  const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+  const { items } = (await itemsRes.json()) as {
+    items: Array<{
+      price: number;
+      currency: string;
+      purchaseUrls: Array<{ price: number; currency: string }>;
+    }>;
+  };
+  expect(items[0].currency).toBe('EUR');
+  expect(items[0].purchaseUrls[0].price).toBe(55);
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('site title and homepage subtext from settings render on the public home page', async ({ page }) => {
+  await login(page);
+
+  const origRes = await page.request.get('/api/settings');
+  const { settings: original } = (await origRes.json()) as {
+    settings: { siteTitle?: string; homepageSubtext?: string };
+  };
+
+  const newTitle = `E2E Title ${Date.now()}`;
+  const newSubtext = `E2E subtext ${Date.now()}`;
+  try {
+    const update = await page.request.put('/api/settings', {
+      data: { siteTitle: newTitle, homepageSubtext: newSubtext },
+    });
+    expect(update.ok()).toBe(true);
+
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: newTitle })).toBeVisible();
+    await expect(page.getByText(newSubtext)).toBeVisible();
+  } finally {
+    await page.request.put('/api/settings', {
+      data: {
+        siteTitle: original.siteTitle ?? 'Wishlist',
+        homepageSubtext: original.homepageSubtext ?? '',
+      },
+    });
+  }
+});
+
+test('uploading an image file saves and serves the wishlist image', async ({ page }) => {
+  await login(page);
+  const slug = `upload-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Upload Test List', slug);
+
+  await page.goto('/admin');
+  const card = page
+    .getByRole('heading', { name: 'Upload Test List' })
+    .locator('xpath=ancestor::div[contains(@class,"rounded-lg")]')
+    .first();
+  await card.getByTitle('Edit wishlist').click();
+
+  await page.setInputFiles('input[type="file"][accept*="image"]', {
+    name: 'pixel.png',
+    mimeType: 'image/png',
+    buffer: PIXEL_PNG,
+  });
+
+  // A preview renders once the upload completes.
+  await expect(page.locator('img[alt="Preview"]')).toBeVisible();
+
+  await page.getByTitle('Save').click();
+
+  let uploadedUrl: string | null = null;
+  await expect(async () => {
+    const res = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}`);
+    const { wishlist: fetched } = (await res.json()) as { wishlist: { imageUrl: string | null } };
+    expect(fetched.imageUrl).toMatch(/^\/uploads\/wishlists\//);
+    uploadedUrl = fetched.imageUrl;
+  }).toPass();
+
+  expect(uploadedUrl).toMatch(/^\/uploads\/wishlists\/.+\.webp$/);
+
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('unknown wishlist slugs render the not-found view', async ({ page }) => {
+  await page.goto('/this-slug-should-not-exist-abc123');
+  await expect(page.getByRole('heading', { name: 'Wishlist Not Found' })).toBeVisible();
 });
