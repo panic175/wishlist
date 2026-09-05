@@ -17,7 +17,7 @@ services:
     # Embed the image build (required to ship the Authelia/CSV/scraper code):
     # it must be a version of THIS repo, otherwise the env vars above do nothing.
     build:
-      context: ./wishlist
+      context: .
     volumes:
       - /opt/docker/wishlist/data:/app/data
     labels:
