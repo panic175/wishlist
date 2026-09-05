@@ -1,4 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import * as cheerio from 'cheerio';
+import { amazonScraper } from '@/lib/scraping/scrapers/amazon';
+import { thaliaScraper } from '@/lib/scraping/scrapers/thalia';
 
 const ADMIN_USER = 'admin';
 const ADMIN_PASS = 'e2e-pass';
@@ -8,6 +11,53 @@ const PIXEL_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   'base64'
 );
+
+test('German Amazon markup parses the EUR price and high-resolution image', () => {
+  const $ = cheerio.load(`
+    <html lang="de-de">
+      <span class="a-price">
+        <span class="a-offscreen">42,95 €</span>
+        <span class="a-price-whole">42</span>
+        <span class="a-price-fraction">95</span>
+      </span>
+      <img
+        id="landingImage"
+        src="https://m.media-amazon.com/images/I/71P5Zo8R8LL._AC_SX300_SY300_QL70_ML2_.jpg"
+        data-old-hires="https://m.media-amazon.com/images/I/71P5Zo8R8LL._AC_SL1500_.jpg"
+      />
+    `);
+
+  const result = amazonScraper.scrape($, 'https://www.amazon.de/example');
+
+  expect(result.price).toBe(42.95);
+  expect(result.currency).toBe('EUR');
+  expect(result.imageUrl).toBe(
+    'https://m.media-amazon.com/images/I/71P5Zo8R8LL._AC_SL1500_.jpg'
+  );
+});
+
+test('Thalia product markup parses JSON-LD product data', () => {
+  const $ = cheerio.load(`
+    <html>
+      <script type="application/ld+json">
+        ${JSON.stringify({
+          '@type': 'Product',
+          name: 'Thalia Beispielartikel',
+          image: ['/images/product.jpg'],
+          offers: { price: '19.99', priceCurrency: 'EUR' },
+        })}
+      </script>
+      <meta property="og:image" content="/images/fallback.jpg" />
+    </html>
+  `);
+
+  const result = thaliaScraper.scrape($, 'https://www.thalia.de/shop/home/artikeldetails/A1075014562');
+
+  expect(result.title).toBe('Thalia Beispielartikel');
+  expect(result.price).toBe(19.99);
+  expect(result.currency).toBe('EUR');
+  expect(result.imageUrl).toBe('https://www.thalia.de/images/product.jpg');
+});
 
 async function login(page: Page) {
   // Authelia forward-auth mode: the app trusts the proxy-injected
@@ -182,6 +232,10 @@ test('adding an item by URL uses scraped data to autofill the form', async ({ pa
   await expect(page.locator('input[value="Mocked 4K Camera"]')).toHaveCount(1);
   await expect(page.locator('input[value="129.99"]')).toHaveCount(1);
   await expect(page.locator('input[value="https://shop.example.com/camera"]')).toHaveCount(2);
+  await expect(form.locator('img[alt="Preview"]')).toHaveAttribute(
+    'src',
+    '/images/items/mock-camera.jpg'
+  );
 
   await form.getByRole('button', { name: /add item|artikel hinzufügen/i }).last().click();
 
@@ -368,6 +422,8 @@ test('visitor can claim and unclaim an item on the public page', async ({ page }
   await expect(page.getByText('Claimable Headphones')).toBeVisible();
 
   await page.getByRole('button', { name: 'Claim This Item' }).click();
+  await expect(page.getByLabel('Your name:')).toHaveValue(ADMIN_USER);
+  await page.getByLabel('Your name:').fill('Grandma');
   await page.locator(`#claim-note-${item.item.id}`).fill('Buying this next week');
   await page.getByRole('button', { name: 'Confirm Claim' }).click();
 
@@ -376,9 +432,10 @@ test('visitor can claim and unclaim an item on the public page', async ({ page }
   // The claim is persisted in the API.
   const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
   const { items } = (await itemsRes.json()) as {
-    items: Array<{ claimedAt: string | null; claimedByNote: string | null }>;
+    items: Array<{ claimedAt: string | null; claimedByName: string | null; claimedByNote: string | null }>;
   };
   expect(items[0].claimedAt).toBeTruthy();
+  expect(items[0].claimedByName).toBe('Grandma');
   expect(items[0].claimedByNote).toBe('Buying this next week');
 
   // Reload to clear the client-side success state; the item now renders as

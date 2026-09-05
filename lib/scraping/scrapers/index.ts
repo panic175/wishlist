@@ -5,6 +5,7 @@ import { walmartScraper } from './walmart';
 import { bestBuyScraper } from './bestbuy';
 import { geizhalsScraper } from './geizhals';
 import { muellerScraper } from './mueller';
+import { thaliaScraper } from './thalia';
 import { genericScraper } from './generic';
 
 export const scrapers: Scraper[] = [
@@ -14,6 +15,7 @@ export const scrapers: Scraper[] = [
   bestBuyScraper,
   geizhalsScraper,
   muellerScraper,
+  thaliaScraper,
   genericScraper,
 ];
 

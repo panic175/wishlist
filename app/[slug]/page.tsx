@@ -9,10 +9,14 @@ import { wishlistsApi, itemsApi, claimingApi, type Wishlist, type Item } from '@
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import PasswordLockGuard from '@/components/password-lock-guard';
+import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/i18n/provider';
+
+const CLAIM_NAME_STORAGE_KEY = 'wishlist-claim-name';
 
 export default function PublicWishlistPage() {
   const { t, lang } = useLanguage();
+  const { username } = useAuth();
   const params = useParams();
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -22,6 +26,7 @@ export default function PublicWishlistPage() {
 
   // Claim form state
   const [claimingItemId, setClaimingItemId] = useState<string | null>(null);
+  const [claimName, setClaimName] = useState('');
   const [claimNote, setClaimNote] = useState('');
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimError, setClaimError] = useState('');
@@ -67,6 +72,8 @@ export default function PublicWishlistPage() {
   const handleClaimItem = (itemId: string) => {
     setClaimingItemId(itemId);
     setClaimError('');
+    const storedName = window.localStorage.getItem(CLAIM_NAME_STORAGE_KEY);
+    setClaimName(storedName !== null ? storedName : username || '');
     setClaimNote('');
     setJustClaimedItemId(null);
   };
@@ -78,11 +85,12 @@ export default function PublicWishlistPage() {
     setClaimError('');
 
     try {
-      await claimingApi.claim(itemId, undefined, claimNote);
+      await claimingApi.claim(itemId, claimName.trim() || undefined, claimNote);
 
       setJustClaimedItemId(itemId);
       setJustClaimedNote(claimNote);
       setClaimingItemId(null);
+      setClaimName(claimName.trim());
       setClaimNote('');
       fetchWishlist();
     } catch (error: unknown) {
@@ -348,6 +356,24 @@ export default function PublicWishlistPage() {
                                 {claimError}
                               </div>
                             )}
+
+                            <div>
+                              <label htmlFor={`claim-name-${item.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                {t('wishlist.nameLabel')}
+                              </label>
+                              <input
+                                id={`claim-name-${item.id}`}
+                                type="text"
+                                value={claimName}
+                                onChange={(e) => {
+                                  const name = e.target.value;
+                                  setClaimName(name);
+                                  window.localStorage.setItem(CLAIM_NAME_STORAGE_KEY, name);
+                                }}
+                                autoComplete="name"
+                                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+                              />
+                            </div>
 
                             <div>
                               <label htmlFor={`claim-note-${item.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -30,6 +30,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
     }
   );
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [imageUploadResetKey, setImageUploadResetKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [isScraping, setIsScraping] = useState(false);
@@ -71,6 +72,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
               },
             ],
       }));
+          setImageUploadResetKey((key) => key + 1);
     } catch (err) {
       setScrapeError(err instanceof Error ? err.message : t('itemForm.scrapeFailed'));
     } finally {
@@ -219,6 +221,7 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
         </div>
         <div className="md:col-span-2">
           <ImageUpload
+            key={imageUploadResetKey}
             currentImageUrl={formData.imageUrl || ''}
             onImageChange={(url) =>
               setFormData((prev) => ({ ...prev, imageUrl: url }))
@@ -235,15 +238,16 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
               setFormData((prev) => ({ ...prev, purchaseUrls: urls }))
             }
             itemId={mode === 'edit' ? item?.id : undefined}
-            onRefreshed={(updatedItem) =>
+            onRefreshed={(updatedItem) => {
               setFormData((prev) => ({
                 ...prev,
                 price: updatedItem.price ?? prev.price,
                 currency: updatedItem.currency || prev.currency,
                 imageUrl: updatedItem.imageUrl || prev.imageUrl,
                 purchaseUrls: updatedItem.purchaseUrls || prev.purchaseUrls || [],
-              }))
-            }
+              }));
+              setImageUploadResetKey((key) => key + 1);
+            }}
           />
         </div>
       </div>
