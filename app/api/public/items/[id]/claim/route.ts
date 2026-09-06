@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { createId } from '@paralleldrive/cuid2';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+import { requireSiteUnlocked } from '@/lib/auth/lock';
 
 const CLAIM_WINDOW_MS = 60 * 1000;
 const CLAIM_MAX_REQUESTS = 10;
@@ -18,6 +19,10 @@ export async function POST(
     if (!limit.allowed) {
       return tooManyRequestsResponse(limit.resetAt - Date.now());
     }
+
+    // Locked sites do not allow anonymous claims.
+    const locked = await requireSiteUnlocked(request);
+    if (locked) return locked;
 
     const { id } = await params;
     const body = await request.json();

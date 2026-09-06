@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, settings } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
-import crypto from 'crypto';
+import { hashPassword } from '@/lib/auth/password';
 
 // GET /api/settings - Get all settings (public endpoint for reading only)
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const allSettings = await db.select().from(settings);
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     delete settingsObj.passwordLockHash;
 
     // Convert passwordLockEnabled to boolean
-    (settingsObj as any).passwordLockEnabled = settingsObj.passwordLockEnabled === 'true';
+    settingsObj.passwordLockEnabled = settingsObj.passwordLockEnabled === 'true';
 
     return NextResponse.json({
       success: true,
@@ -137,8 +137,8 @@ export async function PUT(request: NextRequest) {
 
     // Update password hash if provided
     if (passwordLock && passwordLock.trim() !== '') {
-      // Hash the password using SHA-256
-      const hash = crypto.createHash('sha256').update(passwordLock).digest('hex');
+      // Hash the password using scrypt (memory-hard KDF, per-password salt)
+      const hash = hashPassword(passwordLock);
 
       const existing = await db
         .select()

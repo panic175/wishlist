@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, asc } from 'drizzle-orm';
 import { db, wishlists } from '@/lib/db';
+import { requireSiteUnlocked } from '@/lib/auth/lock';
 
 export async function GET(request: NextRequest) {
   try {
+    const locked = await requireSiteUnlocked(request);
+    if (locked) return locked;
+
     // Fetch only public wishlists
     const publicWishlists = await db
       .select()
