@@ -6,6 +6,7 @@ import { scrapeUrl } from '@/lib/scraping';
 import type { ScrapedData } from '@/lib/scraping';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 const REFRESH_WINDOW_MS = 60 * 1000;
 const REFRESH_MAX_REQUESTS = 10;
@@ -43,7 +44,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = (await parseJsonBody<{ url?: string }>(request)) ?? {};
     const { url } = body;
 
     if (!url) {

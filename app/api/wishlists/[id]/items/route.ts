@@ -5,6 +5,7 @@ import { verifyAccessToken } from '@/lib/auth/utils';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
 import { validateHttpUrl, validatePurchaseUrls } from '@/lib/validation';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 export async function GET(
   request: NextRequest,
@@ -104,7 +105,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = (await parseJsonBody<{ name?: string; description?: string; price?: number | null; currency?: string; quantity?: number; imageUrl?: string; purchaseUrls?: Array<{ label: string; url: string; price?: number | null; currency?: string; imageUrl?: string | null }>; isArchived?: boolean }>(request)) ?? {};
     const {
       name,
       description,
@@ -168,7 +169,17 @@ export async function POST(
         currency: currency || 'USD',
         quantity: quantity || 1,
         imageUrl: imageUrl || null,
-        purchaseUrls: purchaseUrls || null,
+        purchaseUrls: purchaseUrls
+          ? purchaseUrls.map((entry) => ({
+              label: entry.label || entry.url,
+              url: entry.url,
+              ...(entry.price !== undefined && entry.price !== null
+                ? { price: entry.price }
+                : {}),
+              ...(entry.currency ? { currency: entry.currency } : {}),
+              ...(entry.imageUrl ? { imageUrl: entry.imageUrl } : {}),
+            }))
+          : null,
         sortOrder: nextSortOrder,
       })
       .returning();

@@ -4,6 +4,7 @@ import { db, settings } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { hashPassword } from '@/lib/auth/password';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 // GET /api/settings - Get all settings (public endpoint for reading only)
 export async function GET() {
@@ -72,7 +73,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = (await parseJsonBody<{ siteTitle?: string; homepageSubtext?: string; passwordLockEnabled?: boolean; passwordLock?: string; language?: string; defaultCurrency?: string }>(request)) ?? {};
     const { siteTitle, homepageSubtext, passwordLockEnabled, passwordLock, language, defaultCurrency } = body;
 
     // Update or insert siteTitle

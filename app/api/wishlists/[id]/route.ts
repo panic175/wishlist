@@ -4,6 +4,7 @@ import { db, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { validateSlug, validateHttpUrl } from '@/lib/validation';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 export async function GET(
   request: NextRequest,
@@ -81,7 +82,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = (await parseJsonBody<{ name?: string; slug?: string; description?: string; imageUrl?: string; isPublic?: boolean }>(request)) ?? {};
     const { name, slug, description, imageUrl, isPublic } = body;
 
     // Check if wishlist exists

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 export async function POST(
   request: NextRequest,
@@ -30,7 +31,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = (await parseJsonBody<{ newSortOrder?: number }>(request)) ?? {};
     const { newSortOrder } = body;
 
     if (newSortOrder === undefined || typeof newSortOrder !== 'number') {
