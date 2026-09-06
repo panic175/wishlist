@@ -8,6 +8,19 @@ import fs from 'fs';
 let _db: ReturnType<typeof drizzle> | null = null;
 let _sqlite: Database.Database | null = null;
 
+// Restrict DB file access to the owning user. better-sqlite3 creates the file
+// with the process umask, which may leave it world-readable. The WAL and SHM
+// sibling files are created by SQLite at runtime and need the same treatment.
+function restrictSqlitePermissions(dbPath: string): void {
+  for (const filePath of [dbPath, `${dbPath}-wal`, `${dbPath}-shm`]) {
+    try {
+      fs.chmodSync(filePath, 0o600);
+    } catch {
+      // Non-fatal: may not exist yet (WAL/SHM) or env may not support chmod.
+    }
+  }
+}
+
 function getDb() {
   if (!_db) {
     // Ensure data directories exist
@@ -35,11 +48,7 @@ function getDb() {
 
     // Restrict DB file access to the owning user. better-sqlite3 creates the
     // file with the process umask, which may leave it world-readable.
-    try {
-      fs.chmodSync(dbPath, 0o600);
-    } catch {
-      // Non-fatal: staging environments (tmpfs etc.) may not support chmod.
-    }
+    restrictSqlitePermissions(dbPath);
 
     // Create Drizzle instance
     _db = drizzle(_sqlite, { schema });
@@ -223,6 +232,14 @@ export async function initializeDatabase() {
     // Auto-seed database if empty
     const { seedDatabase } = await import('./seed');
     await seedDatabase();
+
+    // Re-apply restrictive permissions; the WAL/SHM siblings may have been
+    // (re)created by the writes above.
+    const dbPathForChmod =
+      process.env.WISHLIST_DB_PATH
+        ? path.resolve(process.cwd(), process.env.WISHLIST_DB_PATH)
+        : path.join(process.cwd(), 'data', 'db', 'wishlist.db');
+    restrictSqlitePermissions(dbPathForChmod);
 
     return true;
   } catch (error) {

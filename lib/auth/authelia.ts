@@ -19,10 +19,19 @@ export function getAutheliaUserHeader(): string {
 /**
  * Return the Authelia-authenticated user when the app runs behind Authelia
  * forward-auth, or null when disabled / header missing.
+ *
+ * The identity header is ONLY honored over a TLS-terminated connection. A
+ * plain-HTTP request with a forged `X-Forwarded-User` must never mint a
+ * session. The reverse proxy is still required to strip client-supplied
+ * copies of the header (see DEPLOYMENT.md) - this check is defence in depth.
  */
-export function getAutheliaUser(headers: { get(name: string): string | null }): string | null {
+export function getAutheliaUser(request: {
+  headers: { get(name: string): string | null };
+  url: string;
+}): string | null {
   if (!AUTHELIA_ENABLED) return null;
-  const value = headers.get(getAutheliaUserHeader());
+  if (!isSecureCookie(request)) return null;
+  const value = request.headers.get(getAutheliaUserHeader());
   if (!value || !value.trim()) return null;
   return value.trim();
 }

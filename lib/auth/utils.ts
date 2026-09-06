@@ -56,6 +56,14 @@ function initializeSecrets(): { secret: string; refreshSecret: string } {
     refreshSecret: crypto.randomBytes(64).toString('hex'),
   };
 
+  // Warn that auto-generated secrets only persist on a real filesystem. In
+  // containers/ephemeral storage and multi-instance setups they rotate on
+  // every restart, invalidating all sessions.
+  console.warn(
+    '⚠️  SECRET not set in the environment - generating persistent keys in data/secrets.json. ' +
+      'For production, set SECRET and REFRESH_SECRET explicitly so sessions survive restarts.'
+  );
+
   // Save to file with restricted permissions
   try {
     fs.writeFileSync(secretsFile, JSON.stringify(newSecrets, null, 2), { mode: 0o600 });

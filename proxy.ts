@@ -38,7 +38,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Authelia forward-auth: convert the trusted header into an app session.
-  const autheliaUser = getAutheliaUser(request.headers);
+  const autheliaUser = getAutheliaUser(request);
   if (autheliaUser) {
     const session = createAutheliaSession(autheliaUser, request);
 
