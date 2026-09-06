@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { type Wishlist, type Item, itemsApi, wishlistsApi } from '@/lib/api';
+import { type Wishlist, type Item, itemsApi, wishlistsApi, claimingApi } from '@/lib/api';
 import ImageUpload from '@/components/image-upload';
 import RichTextEditor from '@/components/RichTextEditor';
 import ItemCard from './ItemCard';
@@ -140,6 +140,30 @@ export default function WishlistCard({
       onItemsChange();
     } catch (error) {
       alert(t('wishlistCard.deleteItemFailed'));
+    }
+  };
+
+  const handleUnclaimItem = async (itemId: string) => {
+    if (!confirm(t('admin.removeReservationConfirm'))) return;
+
+    try {
+      await claimingApi.unclaim(itemId, '');
+      const items = await itemsApi.getAll(wishlist.id);
+      setWishlistItems(items);
+      onItemsChange();
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t('wishlistCard.unclaimFailed'));
+    }
+  };
+
+  const handleTogglePurchased = async (item: Item) => {
+    try {
+      await itemsApi.update(item.id, { isPurchased: !item.isPurchased });
+      const items = await itemsApi.getAll(wishlist.id);
+      setWishlistItems(items);
+      onItemsChange();
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : t('wishlistCard.updateItemFailed'));
     }
   };
 
@@ -533,6 +557,8 @@ export default function WishlistCard({
                       item={item}
                       onEdit={() => setEditingItemId(item.id)}
                       onDelete={() => handleDeleteItem(item.id)}
+                      onUnclaimItem={() => handleUnclaimItem(item.id)}
+                      onTogglePurchased={() => handleTogglePurchased(item)}
                       onMoveUp={() => handleMoveItemUp(item.id)}
                       onMoveDown={() => handleMoveItemDown(item.id)}
                       isFirst={index === 0}

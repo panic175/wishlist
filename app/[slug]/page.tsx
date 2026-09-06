@@ -13,10 +13,11 @@ import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/i18n/provider';
 
 const CLAIM_NAME_STORAGE_KEY = 'wishlist-claim-name';
+const CLAIM_TOKENS_STORAGE_KEY = 'wishlist-claim-tokens';
 
 export default function PublicWishlistPage() {
   const { t, lang } = useLanguage();
-  const { username } = useAuth();
+  const { username, isAuthenticated } = useAuth();
   const params = useParams();
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -38,13 +39,34 @@ export default function PublicWishlistPage() {
   const [unclaimError, setUnclaimError] = useState('');
   const requestIdRef = useRef(0);
   // Claim tokens returned at claim time; held client-side (never exposed via
-  // public item responses) and required to unclaim an item.
-  const claimTokensRef = useRef<Record<string, string>>({});
+  // public item responses) and required to unclaim an item. They are persisted
+  // to localStorage so a reload does not orphan the visitor's own claims.
+  // (The page renders a loading skeleton until items are fetched, so reading
+  // storage here cannot cause a hydration mismatch.)
+  const [claimTokens, setClaimTokens] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(CLAIM_TOKENS_STORAGE_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
 
   const slug = typeof params.slug === 'string' ? params.slug : undefined;
 
   const getErrorMessage = (error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback;
+
+  const persistClaimTokens = (tokens: Record<string, string>) => {
+    try {
+      window.localStorage.setItem(
+        CLAIM_TOKENS_STORAGE_KEY,
+        JSON.stringify(tokens)
+      );
+    } catch {
+      // localStorage unavailable — tokens stay in memory only.
+    }
+  };
 
   const fetchWishlist = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -89,7 +111,11 @@ export default function PublicWishlistPage() {
 
     try {
       const claimResult = await claimingApi.claim(itemId, claimName.trim() || undefined, claimNote);
-      claimTokensRef.current[itemId] = claimResult.claimToken;
+      setClaimTokens((prev) => {
+        const next = { ...prev, [itemId]: claimResult.claimToken };
+        persistClaimTokens(next);
+        return next;
+      });
 
       setJustClaimedItemId(itemId);
       setJustClaimedNote(claimNote);
@@ -109,8 +135,8 @@ export default function PublicWishlistPage() {
       return;
     }
 
-    const claimToken = claimTokensRef.current[itemId];
-    if (!claimToken) {
+    const claimToken = claimTokens[itemId];
+    if (!isAuthenticated && !claimToken) {
       setUnclaimError(t('wishlist.unclaimTokenMissing'));
       return;
     }
@@ -119,8 +145,13 @@ export default function PublicWishlistPage() {
     setUnclaimError('');
 
     try {
-      await claimingApi.unclaim(itemId, claimToken);
-      delete claimTokensRef.current[itemId];
+      await claimingApi.unclaim(itemId, claimToken || '');
+      setClaimTokens((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        persistClaimTokens(next);
+        return next;
+      });
       fetchWishlist();
     } catch (error: unknown) {
       setUnclaimError(getErrorMessage(error, t('wishlist.unclaimFailed')));
@@ -349,7 +380,7 @@ export default function PublicWishlistPage() {
                               {t('wishlist.purchased')}
                             </p>
                           )}
-                          {showClaimed && (
+                          {showClaimed && (claimTokens[item.id] || isAuthenticated) && (
                             <button
                               onClick={() => handleUnclaim(item.id)}
                               disabled={isUnclaiming}

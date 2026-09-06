@@ -70,6 +70,10 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'admin.shareTitle': 'Check out my wishlist site!',
     'admin.shareText': 'I wanted to share my wishlist site with you.',
     'admin.shareUrl': 'https://wishlist.tieso.co/',
+    'admin.removeReservation': 'Remove reservation',
+    'admin.removeReservationConfirm': 'Remove this reservation? The item can be claimed again.',
+    'admin.markPurchased': 'Mark as purchased',
+    'admin.markNotPurchased': 'Mark as not purchased',
 
     // Stats
     'stats.totalWishlists': 'Total Wishlists',
@@ -133,6 +137,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'wishlistCard.deleteItemConfirm': 'Are you sure you want to delete this item?',
     'wishlistCard.deleteItemFailed': 'Failed to delete item',
     'wishlistCard.reorderFailed': 'Failed to reorder item',
+    'wishlistCard.unclaimFailed': 'Failed to remove reservation',
 
     // Item form (admin)
     'itemForm.addNewItem': 'Add New Item',
@@ -328,6 +333,10 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'admin.shareTitle': 'Schau dir meine Wunschlisten-Seite an!',
     'admin.shareText': 'Ich wollte meine Wunschlisten-Seite mit dir teilen.',
     'admin.shareUrl': 'https://wishlist.tieso.co/',
+    'admin.removeReservation': 'Reservierung entfernen',
+    'admin.removeReservationConfirm': 'Diese Reservierung entfernen? Der Artikel kann erneut reserviert werden.',
+    'admin.markPurchased': 'Als gekauft markieren',
+    'admin.markNotPurchased': 'Als nicht gekauft markieren',
 
     // Stats
     'stats.totalWishlists': 'Wunschlisten gesamt',
@@ -391,6 +400,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'wishlistCard.deleteItemConfirm': 'Möchten Sie diesen Artikel wirklich löschen?',
     'wishlistCard.deleteItemFailed': 'Löschen des Artikels fehlgeschlagen',
     'wishlistCard.reorderFailed': 'Neuordnen des Artikels fehlgeschlagen',
+    'wishlistCard.unclaimFailed': 'Entfernen der Reservierung fehlgeschlagen',
 
     // Item form (admin)
     'itemForm.addNewItem': 'Neuen Artikel hinzufügen',

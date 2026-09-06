@@ -29,7 +29,10 @@ export default defineConfig({
     env: {
       ADMIN_USERNAME: 'admin',
       ADMIN_PASSWORD: 'e2e-pass',
-      COOKIE_SECURE: 'false',
+      // localhost is a secure context in Chromium, so Secure cookies work over
+      // plain HTTP here - which is required for the Authelia header (only
+      // honored on TLS-terminated connections) to mint a session.
+      COOKIE_SECURE: 'true',
       WISHLIST_DB_PATH: './data/db/e2e.db',
       AUTHELIA_ENABLED: 'true',
       AUTHELIA_USER_HEADER: 'X-Forwarded-User',

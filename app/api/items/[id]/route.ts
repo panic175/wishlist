@@ -104,7 +104,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = (await parseJsonBody<{ name?: string; description?: string; price?: number | null; currency?: string; quantity?: number; imageUrl?: string; purchaseUrls?: Array<{ label?: string; url?: string; price?: number | null; currency?: string; imageUrl?: string }>; isArchived?: boolean }>(request)) ?? {};
+    const body = (await parseJsonBody<{ name?: string; description?: string; price?: number | null; currency?: string; quantity?: number; imageUrl?: string; purchaseUrls?: Array<{ label?: string; url?: string; price?: number | null; currency?: string; imageUrl?: string }>; isArchived?: boolean; isPurchased?: boolean }>(request)) ?? {};
     const {
       name,
       description,
@@ -114,6 +114,7 @@ export async function PATCH(
       imageUrl,
       purchaseUrls,
       isArchived,
+      isPurchased,
     } = body;
 
     // Check if item exists
@@ -157,6 +158,7 @@ export async function PATCH(
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
     if (purchaseUrls !== undefined) updateData.purchaseUrls = purchaseUrls;
     if (isArchived !== undefined) updateData.isArchived = isArchived;
+    if (isPurchased !== undefined) updateData.isPurchased = isPurchased;
 
     if (currency !== undefined && currency !== existingItem[0].currency) {
       const urls = purchaseUrls !== undefined

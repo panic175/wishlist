@@ -469,6 +469,207 @@ test('visitor can claim and unclaim an item on the public page', async ({ page }
   await deleteWishlist(page, wishlist.wishlist.id);
 });
 
+test('a visitor can unclaim their own claim after reloading the page', async ({ page, browser }) => {
+  await login(page);
+
+  const slug = `claim-persist-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Claim Persist Test List', slug);
+  const item = await createItem(page, wishlist.wishlist.id, {
+    name: 'Persisted Claim Watch',
+    price: 120,
+  });
+
+  const visitorCtx = await browser.newContext();
+  const visitor = await visitorCtx.newPage();
+  await visitor.goto(`/${slug}`);
+  await expect(visitor.getByText('Persisted Claim Watch')).toBeVisible();
+
+  await visitor.getByRole('button', { name: 'Claim This Item' }).click();
+  await visitor.getByLabel('Your name:').fill('Grandma');
+  await visitor.locator(`#claim-note-${item.item.id}`).fill('Buying this next week');
+  await visitor.getByRole('button', { name: 'Confirm Claim' }).click();
+  await expect(visitor.getByText('Item Claimed!')).toBeVisible();
+
+  // A full reload wipes all in-memory claims state; the token must be restored
+  // from localStorage so the visitor can still unclaim their own item.
+  await visitor.reload();
+  await visitor.getByLabel('Show claimed items').check();
+  await expect(visitor.getByText('Claimed by Grandma')).toBeVisible();
+
+  const unclaimButton = visitor.getByRole('button', { name: 'Unclaim Item' });
+  await expect(unclaimButton).toBeVisible();
+
+  visitor.once('dialog', (d) => d.accept());
+  await unclaimButton.click();
+
+  await expect(visitor.getByRole('button', { name: 'Claim This Item' })).toBeVisible();
+
+  const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+  const { items } = (await itemsRes.json()) as { items: Array<{ claimedAt: string | null }> };
+  expect(items[0].claimedAt).toBe(null);
+
+  await visitorCtx.close();
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('a different visitor sees no unclaim control for another persons claim', async ({ page, browser }) => {
+  await login(page);
+
+  const slug = `claim-other-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Claim Other Test List', slug);
+  const item = await createItem(page, wishlist.wishlist.id, {
+    name: 'Claimed by Someone Else',
+    price: 25,
+  });
+
+  const ownerCtx = await browser.newContext();
+  const owner = await ownerCtx.newPage();
+  await owner.goto(`/${slug}`);
+  await owner.getByRole('button', { name: 'Claim This Item' }).click();
+  await owner.getByLabel('Your name:').fill('Grandma');
+  await owner.getByRole('button', { name: 'Confirm Claim' }).click();
+  await expect(owner.getByText('Item Claimed!')).toBeVisible();
+
+  const otherCtx = await browser.newContext();
+  const other = await otherCtx.newPage();
+  await other.goto(`/${slug}`);
+  await other.getByLabel('Show claimed items').check();
+  await expect(other.getByText('Claimed by Grandma')).toBeVisible();
+  await expect(other.getByRole('button', { name: 'Unclaim Item' })).toHaveCount(0);
+
+  // Server-side enforcement: without a token, or with a wrong token, the
+  // claim cannot be removed — even though the UI hides the button entirely.
+  const noToken = await other.request.post(`/api/public/items/${item.item.id}/unclaim`, {
+    data: {},
+  });
+  expect(noToken.status()).toBe(400);
+
+  const wrongToken = await other.request.post(`/api/public/items/${item.item.id}/unclaim`, {
+    data: { claimToken: 'not-the-token' },
+  });
+  expect(wrongToken.status()).toBe(403);
+
+  const stillRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+  const { items } = (await stillRes.json()) as { items: Array<{ claimedAt: string | null }> };
+  expect(items[0].claimedAt).toBeTruthy();
+
+  // The owner can still unclaim using their stored token.
+  owner.once('dialog', (d) => d.accept());
+  await owner.reload();
+  await owner.getByLabel('Show claimed items').check();
+  await owner.getByRole('button', { name: 'Unclaim Item' }).click();
+  await expect(owner.getByRole('button', { name: 'Claim This Item' })).toBeVisible();
+
+  await ownerCtx.close();
+  await otherCtx.close();
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('admin can remove a reservation and toggle purchased from the dashboard', async ({ page, browser }) => {
+  await login(page);
+
+  const slug = `claim-mgr-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Claim Manager Test List', slug);
+  const item = await createItem(page, wishlist.wishlist.id, {
+    name: 'Claimed Earbuds',
+    price: 9,
+  });
+
+  const visitorCtx = await browser.newContext();
+  const visitor = await visitorCtx.newPage();
+  await visitor.goto(`/${slug}`);
+  await visitor.getByRole('button', { name: 'Claim This Item' }).click();
+  await visitor.getByLabel('Your name:').fill('Grandma');
+  await visitor.locator(`#claim-note-${item.item.id}`).fill('Buying some');
+  await visitor.getByRole('button', { name: 'Confirm Claim' }).click();
+  await expect(visitor.getByText('Item Claimed!')).toBeVisible();
+
+  // The dashboard card shows a claim badge and management buttons.
+  await page.goto('/admin');
+  await expandWishlist(page, 'Claim Manager Test List');
+  let itemCard = page.locator('div.rounded', {
+    has: page.locator('h5', { hasText: 'Claimed Earbuds' }),
+  });
+  await expect(itemCard.getByText('Claimed by Grandma')).toBeVisible();
+  await expect(itemCard.getByText(/Buying some/)).toBeVisible();
+
+  // Remove the reservation via the dashboard button.
+  page.once('dialog', (d) => d.accept());
+  await itemCard.getByRole('button', { name: 'Remove reservation' }).click();
+
+  await expect.poll(async () => {
+    const res = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+    const { items } = (await res.json()) as { items: Array<{ claimedAt: string | null }> };
+    return items[0].claimedAt;
+  }).toBe(null);
+
+  // Claim again and toggle the purchased flag on and off.
+  const claimRes = await page.request.post(`/api/public/items/${item.item.id}/claim`, {
+    data: { name: 'Grandma' },
+  });
+  expect(claimRes.ok()).toBe(true);
+
+  await page.reload();
+  await expandWishlist(page, 'Claim Manager Test List');
+  itemCard = page.locator('div.rounded', {
+    has: page.locator('h5', { hasText: 'Claimed Earbuds' }),
+  });
+
+  await itemCard.getByRole('button', { name: 'Mark as purchased' }).click();
+  await expect.poll(async () => {
+    const res = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+    const { items } = (await res.json()) as { items: Array<{ isPurchased: boolean }> };
+    return items[0].isPurchased;
+  }).toBe(true);
+
+  await itemCard.getByRole('button', { name: 'Mark as not purchased' }).click();
+  await expect.poll(async () => {
+    const res = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+    const { items } = (await res.json()) as { items: Array<{ isPurchased: boolean }> };
+    return items[0].isPurchased;
+  }).toBe(false);
+
+  await visitorCtx.close();
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
+test('admin can unclaim another visitors claim on the public page', async ({ page, browser }) => {
+  await login(page);
+
+  const slug = `claim-admin-${Date.now()}`;
+  const wishlist = await createWishlist(page, 'Claim Admin Test List', slug);
+  await createItem(page, wishlist.wishlist.id, {
+    name: 'Admin Unclaim Mug',
+    price: 15,
+  });
+
+  const visitorCtx = await browser.newContext();
+  const visitor = await visitorCtx.newPage();
+  await visitor.goto(`/${slug}`);
+  await visitor.getByRole('button', { name: 'Claim This Item' }).click();
+  await visitor.getByLabel('Your name:').fill('Grandma');
+  await visitor.getByRole('button', { name: 'Confirm Claim' }).click();
+  await expect(visitor.getByText('Item Claimed!')).toBeVisible();
+
+  // The admin session sees an unclaim control even though they never held the token.
+  await page.goto(`/${slug}`);
+  await page.getByLabel('Show claimed items').check();
+  await expect(page.getByText('Claimed by Grandma')).toBeVisible();
+  const unclaimButton = page.getByRole('button', { name: 'Unclaim Item' });
+  await expect(unclaimButton).toBeVisible();
+
+  page.once('dialog', (d) => d.accept());
+  await unclaimButton.click();
+  await expect(page.getByRole('button', { name: 'Claim This Item' })).toBeVisible();
+
+  const itemsRes = await page.request.get(`/api/wishlists/${wishlist.wishlist.id}/items`);
+  const { items } = (await itemsRes.json()) as { items: Array<{ claimedAt: string | null }> };
+  expect(items[0].claimedAt).toBe(null);
+
+  await visitorCtx.close();
+  await deleteWishlist(page, wishlist.wishlist.id);
+});
+
 test('admin APIs reject anonymous requests while public endpoints stay open', async ({ page }) => {
   // Public endpoints that must remain open.
   const publicLists = await page.request.get('/api/public/wishlists');

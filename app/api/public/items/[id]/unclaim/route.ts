@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
+import { verifyAccessToken } from '@/lib/auth/utils';
 import { safeEqualString } from '@/lib/auth/password';
 import { csrfGuard } from '@/lib/csrf';
 
@@ -33,7 +34,13 @@ export async function POST(
     const body = await request.json().catch(() => null);
     const { claimToken } = body || {};
 
-    if (typeof claimToken !== 'string' || claimToken.trim() === '') {
+    // Authenticated admins may unclaim any item (e.g. to recover a claim whose
+    // token was lost). Anonymous unclaims still require the claimant's token.
+    const adminToken = request.cookies.get('access_token')?.value;
+    const isAdmin =
+      typeof adminToken === 'string' && verifyAccessToken(adminToken) !== null;
+
+    if (!isAdmin && (typeof claimToken !== 'string' || claimToken.trim() === '')) {
       return NextResponse.json(
         { error: 'Claim token is required' },
         { status: 400 }
@@ -62,8 +69,8 @@ export async function POST(
       );
     }
 
-    // Only the claimant (holding the claim token) may unclaim.
-    if (!safeEqualString(claimToken, item[0].claimedByToken)) {
+    // Only the claimant (holding the claim token) may unclaim — admins may too.
+    if (!isAdmin && !safeEqualString(claimToken, item[0].claimedByToken)) {
       return NextResponse.json(
         { error: 'Invalid claim token' },
         { status: 403 }
@@ -84,7 +91,7 @@ export async function POST(
       );
     }
 
-    if (!wishlist[0].isPublic) {
+    if (!isAdmin && !wishlist[0].isPublic) {
       return NextResponse.json(
         { error: 'This wishlist is private' },
         { status: 403 }

@@ -43,9 +43,11 @@ export function validateSlug(slug: unknown): string | null {
 }
 
 /**
- * Accepts only http:/https: URLs (no javascript:, data:, vbscript:, etc.)
- * Used for user-supplied links so a crafted URL cannot become an XSS vector
- * when rendered into an href/src. Returns null when valid.
+ * Accepts http:/https: URLs (no javascript:, data:, vbscript:, etc.) and
+ * same-origin absolute paths such as `/uploads/...` (which the image uploader
+ * produces). Protocol-relative `//host/path` strings remain rejected so a
+ * crafted URL cannot be pointed at an arbitrary origin when rendered into an
+ * href/src. Returns null when valid.
  */
 export function validateHttpUrl(value: unknown): string | null {
   if (value === null || value === undefined || value === '') {
@@ -56,6 +58,9 @@ export function validateHttpUrl(value: unknown): string | null {
   }
   if (value.length > 2048) {
     return 'URL is too long';
+  }
+  if (value.startsWith('/') && !value.startsWith('//')) {
+    return null;
   }
   try {
     const parsed = new URL(value);
