@@ -44,12 +44,11 @@ export async function POST(request: NextRequest) {
     const accessToken = generateAccessToken(username);
     const refreshToken = generateRefreshToken(username);
 
-    // Create response
+    // Create response. Tokens are only ever delivered as httpOnly cookies so
+    // they are never readable by client JavaScript or logs.
     const response = NextResponse.json({
       success: true,
       user: { username },
-      accessToken,
-      refreshToken,
     });
 
     // Set cookies
@@ -62,12 +61,12 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('access_token', accessToken, {
       ...cookieOptions,
-      maxAge: 72 * 60 * 60, // 72 hours
+      maxAge: 15 * 60, // 15 minutes
     });
 
     response.cookies.set('refresh_token', refreshToken, {
       ...cookieOptions,
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     return response;

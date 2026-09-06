@@ -8,8 +8,8 @@ import { verifyPassword, safeEqualString } from './password';
 const secrets = initializeSecrets();
 
 // Token expiry times
-const TOKEN_EXPIRY = '72h';
-const REFRESH_TOKEN_EXPIRY = '30d';
+const TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY = '7d';
 
 // The insecure default shipped in .env.example / docker-compose.yml. Logins
 // using it are refused.

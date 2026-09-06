@@ -45,7 +45,7 @@ export function createAutheliaSession(user: string, request: CookieSecureRequest
   return {
     accessToken,
     refreshToken,
-    accessCookieOptions: { ...base, maxAge: 72 * 60 * 60 },
-    refreshCookieOptions: { ...base, maxAge: 30 * 24 * 60 * 60 },
+    accessCookieOptions: { ...base, maxAge: 15 * 60 },
+    refreshCookieOptions: { ...base, maxAge: 7 * 24 * 60 * 60 },
   };
 }
