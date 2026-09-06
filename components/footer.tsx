@@ -10,7 +10,7 @@ export default function Footer() {
   const { t } = useLanguage();
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <footer className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col items-center gap-2 text-sm">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <p>{t('footer.builtFor')}</p>
@@ -18,7 +18,7 @@ export default function Footer() {
         <div className="flex items-center gap-3">
           <a
             href="/admin"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
           >
             {t('footer.admin')}
           </a>
@@ -29,7 +29,7 @@ export default function Footer() {
                 href="https://github.com/Reggio-Digital/wishlist"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
                 title={t('footer.ghRepo')}
               >
                 <svg
@@ -50,7 +50,6 @@ export default function Footer() {
           <button
             onClick={toggleTheme}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300 font-medium"
-            aria-label={t('theme.toggle')}
           >
             {theme === 'light' ? (
               <>
@@ -90,6 +89,6 @@ export default function Footer() {
           </button>
         </div>
       </div>
-    </div>
+    </footer>
   );
 }
