@@ -33,6 +33,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'wishlist.backToHome': 'Back to Home',
     'wishlist.preferences': 'General Interests & Preferences',
     'wishlist.showClaimed': 'Show claimed items',
+    'wishlist.itemCount': 'Showing {visible} of {total} items',
     'wishlist.noItems': 'No items in this wishlist yet',
     'wishlist.allClaimed': 'All items have been claimed!',
     'wishlist.itemClaimed': 'Item Claimed!',
@@ -74,6 +75,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'admin.removeReservationConfirm': 'Remove this reservation? The item can be claimed again.',
     'admin.markPurchased': 'Mark as purchased',
     'admin.markNotPurchased': 'Mark as not purchased',
+    'admin.version': 'Version',
 
     // Stats
     'stats.totalWishlists': 'Total Wishlists',
@@ -296,6 +298,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'wishlist.backToHome': 'Zurück zur Startseite',
     'wishlist.preferences': 'Allgemeine Interessen & Vorlieben',
     'wishlist.showClaimed': 'Reservierte Artikel anzeigen',
+    'wishlist.itemCount': '{visible} von {total} Artikeln',
     'wishlist.noItems': 'Noch keine Artikel in dieser Wunschliste',
     'wishlist.allClaimed': 'Alle Artikel wurden reserviert!',
     'wishlist.itemClaimed': 'Artikel reserviert!',
@@ -337,6 +340,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'admin.removeReservationConfirm': 'Diese Reservierung entfernen? Der Artikel kann erneut reserviert werden.',
     'admin.markPurchased': 'Als gekauft markieren',
     'admin.markNotPurchased': 'Als nicht gekauft markieren',
+    'admin.version': 'Version',
 
     // Stats
     'stats.totalWishlists': 'Wunschlisten gesamt',

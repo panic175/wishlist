@@ -411,3 +411,24 @@ export const settingsApi = {
     return handleResponse<{ success: boolean; message: string }>(response);
   },
 };
+
+// Version info API (admin)
+export interface AppVersion {
+  version: string | null;
+  commit: string | null;
+  buildTime: string | null;
+}
+
+export const versionApi = {
+  async get(): Promise<AppVersion> {
+    const response = await apiFetch(`${API_BASE_URL}/version`, {
+      credentials: 'include',
+    });
+    const result = await handleResponse<{ success: boolean; version: string | null; commit: string | null; buildTime: string | null }>(response);
+    return {
+      version: result.version ?? null,
+      commit: result.commit ?? null,
+      buildTime: result.buildTime ?? null,
+    };
+  },
+};

@@ -670,6 +670,21 @@ test('admin can unclaim another visitors claim on the public page', async ({ pag
   await deleteWishlist(page, wishlist.wishlist.id);
 });
 
+test('admin dashboard shows the app version and commit', async ({ page }) => {
+  await login(page);
+
+  const res = await page.request.get('/api/version');
+  expect(res.status()).toBe(200);
+  const { version, commit } = (await res.json()) as { version: string; commit: string | null };
+
+  await page.goto('/admin');
+  await expect(page.getByText(/Version\s+\d+\.\d+\.\d+/)).toBeVisible();
+
+  // package.json version matches what the API reports.
+  expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+  expect(commit || null).toBe(null); // e2e server does not set APP_COMMIT
+});
+
 test('admin APIs reject anonymous requests while public endpoints stay open', async ({ page }) => {
   // Public endpoints that must remain open.
   const publicLists = await page.request.get('/api/public/wishlists');
@@ -705,6 +720,7 @@ test('admin APIs reject anonymous requests while public endpoints stay open', as
     [`/api/wishlists/${dad!.id}/reorder`, 'POST', { newSortOrder: 0 }],
     ['/api/settings', 'PUT', { siteTitle: 'x' }],
     ['/api/scrape', 'POST', { url: 'https://example.com' }],
+    ['/api/version', 'GET', undefined],
   ];
   for (const [url, method, body] of adminCalls) {
     const options: { method: string; data?: unknown } = { method };

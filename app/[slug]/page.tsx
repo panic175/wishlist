@@ -266,7 +266,7 @@ export default function PublicWishlistPage() {
               </label>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {filteredItems.length} of {items.length} {lang === 'de' ? 'Artikel' : 'items'}
+              {t('wishlist.itemCount', { visible: filteredItems.length, total: items.length })}
             </div>
           </div>
 
