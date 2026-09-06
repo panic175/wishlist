@@ -33,6 +33,14 @@ function getDb() {
     _sqlite = new Database(dbPath);
     _sqlite.pragma('journal_mode = WAL'); // Better concurrency
 
+    // Restrict DB file access to the owning user. better-sqlite3 creates the
+    // file with the process umask, which may leave it world-readable.
+    try {
+      fs.chmodSync(dbPath, 0o600);
+    } catch {
+      // Non-fatal: staging environments (tmpfs etc.) may not support chmod.
+    }
+
     // Create Drizzle instance
     _db = drizzle(_sqlite, { schema });
   }

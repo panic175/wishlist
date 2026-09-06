@@ -4,6 +4,7 @@ import { db, wishlistItems, wishlists } from '@/lib/db';
 import { createId } from '@paralleldrive/cuid2';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
+import { csrfGuard } from '@/lib/csrf';
 
 const CLAIM_WINDOW_MS = 60 * 1000;
 const CLAIM_MAX_REQUESTS = 10;
@@ -13,6 +14,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Block cross-origin (forged) claims.
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     // Prevent griefing/automated claim spam.
     const ip = getClientIp(request);
     const limit = rateLimit(`claim:${ip}`, CLAIM_MAX_REQUESTS, CLAIM_WINDOW_MS);

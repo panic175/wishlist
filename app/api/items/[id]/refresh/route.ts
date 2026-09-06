@@ -5,6 +5,7 @@ import { verifyAccessToken } from '@/lib/auth/utils';
 import { scrapeUrl } from '@/lib/scraping';
 import type { ScrapedData } from '@/lib/scraping';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+import { csrfGuard } from '@/lib/csrf';
 
 const REFRESH_WINDOW_MS = 60 * 1000;
 const REFRESH_MAX_REQUESTS = 10;
@@ -14,6 +15,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     const token = request.cookies.get('access_token')?.value;
 
     if (!token) {

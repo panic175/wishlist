@@ -66,10 +66,21 @@ export function toCSV(rows: (string | number | boolean | null | undefined)[][]):
       row
         .map((field) => {
           const s = field === null || field === undefined ? '' : String(field);
-          if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
-            return '"' + s.replace(/"/g, '""') + '"';
+          // CSV formula injection: prefix cells whose *string* content begins
+          // with an expression trigger so spreadsheet apps treat them as text,
+          // not formulas. Numeric/boolean cells are left untouched.
+          const unsafe =
+            typeof field === 'string' && /^[=+\-@\t\r]/.test(s);
+          const escaped = unsafe ? `'${s}` : s;
+          if (
+            escaped.includes(',') ||
+            escaped.includes('"') ||
+            escaped.includes('\n') ||
+            escaped.includes('\r')
+          ) {
+            return '"' + escaped.replace(/"/g, '""') + '"';
           }
-          return s;
+          return escaped;
         })
         .join(',')
     )

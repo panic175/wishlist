@@ -4,6 +4,7 @@ import { db, wishlistItems, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { parseCSV } from '@/lib/csv';
 import { validateHttpUrl } from '@/lib/validation';
+import { csrfGuard } from '@/lib/csrf';
 
 function columnIndex(header: string[], name: string): number {
   return header.indexOf(name);
@@ -25,6 +26,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const csrf = csrfGuard(request);
+  if (csrf) return csrf;
+
   const token = request.cookies.get('access_token')?.value;
   if (!token) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

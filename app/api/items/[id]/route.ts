@@ -4,6 +4,7 @@ import { db, wishlistItems, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
 import { validateHttpUrl, validatePurchaseUrls } from '@/lib/validation';
+import { csrfGuard } from '@/lib/csrf';
 
 export async function GET(
   request: NextRequest,
@@ -81,6 +82,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     const token = request.cookies.get('access_token')?.value;
 
     if (!token) {
@@ -192,6 +196,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     const token = request.cookies.get('access_token')?.value;
 
     if (!token) {
