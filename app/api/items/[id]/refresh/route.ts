@@ -4,6 +4,10 @@ import { db, wishlistItems } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { scrapeUrl } from '@/lib/scraping';
 import type { ScrapedData } from '@/lib/scraping';
+import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+
+const REFRESH_WINDOW_MS = 60 * 1000;
+const REFRESH_MAX_REQUESTS = 10;
 
 export async function POST(
   request: NextRequest,
@@ -25,6 +29,13 @@ export async function POST(
         { error: 'Invalid or expired token' },
         { status: 401 }
       );
+    }
+
+    // Prevent resource exhaustion from concurrent/slow rescrapes.
+    const ip = getClientIp(request);
+    const limit = rateLimit(`refresh:${ip}`, REFRESH_MAX_REQUESTS, REFRESH_WINDOW_MS);
+    if (!limit.allowed) {
+      return tooManyRequestsResponse(limit.resetAt - Date.now());
     }
 
     const { id } = await params;

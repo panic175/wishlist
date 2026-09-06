@@ -2,12 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { createId } from '@paralleldrive/cuid2';
+import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+
+const CLAIM_WINDOW_MS = 60 * 1000;
+const CLAIM_MAX_REQUESTS = 10;
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Prevent griefing/automated claim spam.
+    const ip = getClientIp(request);
+    const limit = rateLimit(`claim:${ip}`, CLAIM_MAX_REQUESTS, CLAIM_WINDOW_MS);
+    if (!limit.allowed) {
+      return tooManyRequestsResponse(limit.resetAt - Date.now());
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { name, note } = body;
