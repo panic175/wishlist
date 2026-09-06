@@ -102,7 +102,6 @@ export async function POST(
     return NextResponse.json(
       {
         error: 'Failed to refresh URL',
-        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
