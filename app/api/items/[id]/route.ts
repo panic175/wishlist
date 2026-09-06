@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
+import { validateHttpUrl, validatePurchaseUrls } from '@/lib/validation';
 
 export async function GET(
   request: NextRequest,
@@ -58,12 +59,13 @@ export async function GET(
       );
     }
 
-    // Strip the claim token for anonymous visitors
-    const { claimedByToken: _claimedByToken, ...itemData } = item[0];
+    // Strip the claim token for anonymous visitors (JSON omits undefined props)
+    const itemData =
+      isAuthenticated ? item[0] : { ...item[0], claimedByToken: undefined };
 
     return NextResponse.json({
       success: true,
-      item: isAuthenticated ? item[0] : itemData,
+      item: itemData,
     });
   } catch (error) {
     console.error('Error fetching item:', error);
@@ -121,6 +123,20 @@ export async function PATCH(
         { error: 'Item not found' },
         { status: 404 }
       );
+    }
+
+    // Validate new links before persisting anything.
+    if (imageUrl !== undefined) {
+      const imageError = validateHttpUrl(imageUrl);
+      if (imageError) {
+        return NextResponse.json({ error: imageError }, { status: 400 });
+      }
+    }
+    if (purchaseUrls !== undefined) {
+      const purchaseError = validatePurchaseUrls(purchaseUrls);
+      if (purchaseError) {
+        return NextResponse.json({ error: purchaseError }, { status: 400 });
+      }
     }
 
     // Build update object (only include provided fields)

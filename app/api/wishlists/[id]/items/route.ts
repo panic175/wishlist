@@ -3,6 +3,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
+import { validateHttpUrl, validatePurchaseUrls } from '@/lib/validation';
 
 export async function GET(
   request: NextRequest,
@@ -61,7 +62,7 @@ export async function GET(
     // Return items (strip the claim token for anonymous visitors)
     const responseItems = isAuthenticated
       ? items
-      : items.map(({ claimedByToken: _claimedByToken, ...rest }) => rest);
+      : items.map((item) => ({ ...item, claimedByToken: undefined }));
 
     return NextResponse.json({
       success: true,
@@ -116,6 +117,16 @@ export async function POST(
         { error: 'Item name is required' },
         { status: 400 }
       );
+    }
+
+    const imageError = validateHttpUrl(imageUrl);
+    if (imageError) {
+      return NextResponse.json({ error: imageError }, { status: 400 });
+    }
+
+    const purchaseError = validatePurchaseUrls(purchaseUrls);
+    if (purchaseError) {
+      return NextResponse.json({ error: purchaseError }, { status: 400 });
     }
 
     // Check if wishlist exists

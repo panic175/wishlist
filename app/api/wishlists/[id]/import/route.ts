@@ -3,6 +3,7 @@ import { eq, desc } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { parseCSV } from '@/lib/csv';
+import { validateHttpUrl } from '@/lib/validation';
 
 function columnIndex(header: string[], name: string): number {
   return header.indexOf(name);
@@ -107,7 +108,17 @@ export async function POST(
       } catch {
         // ignore malformed JSON and import the rest of the row
       }
+      // Drop entries whose URL scheme is dangerous (javascript:, data:, ...).
+      if (purchaseUrls) {
+        purchaseUrls = purchaseUrls.filter(
+          (entry) =>
+            validateHttpUrl(entry.url) === null &&
+            validateHttpUrl(entry.imageUrl) === null
+        );
+      }
     }
+
+    const imageUrl = col('image_url') >= 0 ? (row[col('image_url')] || '').trim() || null : null;
 
     values.push({
       wishlistId: id,
@@ -117,7 +128,7 @@ export async function POST(
       currency:
         (col('currency') >= 0 ? (row[col('currency')] || '').trim() || 'USD' : 'USD'),
       quantity: parseNumber(col('quantity') >= 0 ? row[col('quantity')] : undefined, 1) ?? 1,
-      imageUrl: col('image_url') >= 0 ? (row[col('image_url')] || '').trim() || null : null,
+      imageUrl: imageUrl && validateHttpUrl(imageUrl) === null ? imageUrl : null,
       purchaseUrls,
       isArchived: parseBool(col('is_archived') >= 0 ? row[col('is_archived')] : undefined),
       isPurchased: parseBool(col('is_purchased') >= 0 ? row[col('is_purchased')] : undefined),
