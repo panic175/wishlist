@@ -29,7 +29,7 @@ export default function Header({ title, subtitle, imageUrl, actions, maxWidth = 
       )}
 
       {/* Hero Section */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
         <div className={`${maxWidth} mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8`}>
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             {imageUrl && (
@@ -58,7 +58,7 @@ export default function Header({ title, subtitle, imageUrl, actions, maxWidth = 
             </div>
           </div>
         </div>
-      </div>
+      </header>
     </>
   );
 }
