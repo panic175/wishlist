@@ -18,6 +18,12 @@ slug URL, add items with purchase links, and let visitors claim items.
   requires `isSecureCookie`). `/api/auth/login` is disabled while enabled; the
   login page reads runtime env `AUTHELIA_PORTAL_URL` (no `NEXT_PUBLIC_*`
   build-time vars). Public wishlist/claim flows stay open.
+- **CSP**: nonce-based `Content-Security-Policy` is emitted per-request from
+  `proxy.ts` (Next.js applies the nonce to its injected scripts/styles; all
+  renders are `force-dynamic`). Static headers (`X-Frame-Options`, nosniff,
+  Referrer-Policy, Permissions-Policy) are in `next.config.ts`. No
+  `'unsafe-inline'`/`'unsafe-eval'` in production; inline `style` attributes are
+  banned under this policy.
 - **Rate limiting**: in-memory per-IP limiter (`lib/rate-limit.ts`); proxy IP
   headers are only honoured when `TRUST_PROXY_HEADERS=true`.
 - **Other**: Lexical rich text editor, Sharp image processing, Axios + Cheerio scraping

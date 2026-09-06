@@ -1,25 +1,9 @@
 import type { NextConfig } from "next";
 
+// CSP is intentionally NOT set here: it carries a per-request nonce, so it is
+// emitted dynamically from proxy.ts (see buildCsp/withNonce there). Keep the
+// static/security headers that don't depend on the request here.
 const securityHeaders = [
-  // CSP relies on unsafe-inline because Next.js injects inline bootstrap
-  // scripts/styles that we cannot nonce-hash from a static headers() config.
-  // It still hard-blocks external script/style sources, data:/blob: injection
-  // and clickjacking (frame-ancestors).
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
-      "connect-src 'self'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-    ].join('; '),
-  },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
