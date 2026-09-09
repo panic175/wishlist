@@ -138,7 +138,7 @@ export default function PublicWishlistPage() {
         />
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto py-12 sm:px-6 lg:px-8">
+      <main className="max-w-5xl mx-auto py-12 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0">
           <a
             href="/"
@@ -227,9 +227,9 @@ export default function PublicWishlistPage() {
 
                     {/* Middle: Item Details */}
                     <div className="flex-1 p-6">
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                         {item.name}
-                      </h3>
+                      </h2>
                       {item.description && (
                         <p className="text-base text-gray-600 dark:text-gray-300 mb-4">
                           {item.description}
@@ -358,7 +358,7 @@ export default function PublicWishlistPage() {
             </div>
           )}
         </div>
-      </div>
+      </main>
 
         <Footer />
       </div>
