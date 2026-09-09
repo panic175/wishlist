@@ -9,6 +9,8 @@ import { useLanguage } from '@/lib/i18n/provider';
 
 export default function AdminLoginPage() {
   const { t } = useLanguage();
+  const autheliaEnabled = process.env.NEXT_PUBLIC_AUTHELIA_ENABLED === 'true';
+  const autheliaPortalUrl = process.env.NEXT_PUBLIC_AUTHELIA_PORTAL_URL;
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -82,7 +84,20 @@ export default function AdminLoginPage() {
       <div className="max-w-4xl mx-auto py-12 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0">
           <div className="max-w-md mx-auto">
-            <form className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-8 space-y-6" onSubmit={handleSubmit}>
+            {autheliaEnabled ? (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-8 space-y-6 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('login.autheliaSubtitle')}
+                </p>
+                <a
+                  href={autheliaPortalUrl || '/'}
+                  className="inline-flex w-full justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-md hover:shadow-lg transition-all"
+                >
+                  {t('login.authelia')}
+                </a>
+              </div>
+            ) : (
+              <form className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-8 space-y-6" onSubmit={handleSubmit}>
               {error && (
                 <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
                   <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
@@ -134,6 +149,7 @@ export default function AdminLoginPage() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       </div>

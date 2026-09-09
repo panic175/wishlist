@@ -128,6 +128,42 @@ The entrypoint script automatically:
 - Sets correct ownership on data directories
 - Ensures proper file permissions for uploads
 
+## Authelia Single Sign-On (Optional)
+
+The admin area (`/admin`) can be protected by [Authelia](https://www.authelia.com)
+using forward-auth. The reverse proxy runs every `/admin/*` request through
+Authelia, then injects the authenticated username into a request header which
+the app converts into its own session.
+
+**Required environment variables:**
+
+```env
+AUTHELIA_ENABLED=true
+AUTHELIA_USER_HEADER=X-Forwarded-User   # header the proxy sets after Authelia auth
+NEXT_PUBLIC_AUTHELIA_ENABLED=true       # shows the "Continue with Authelia" login page
+NEXT_PUBLIC_AUTHELIA_PORTAL_URL=https://auth.example.com
+```
+
+When enabled:
+- The built-in admin login is disabled (`POST /api/auth/login` returns 403).
+- `/admin/login` becomes a "Continue with Authelia" link to the portal.
+- Any verified Authelia user can manage wishlists, so restriction rules should
+  be defined in Authelia (the app does not enforce roles).
+
+Traefik + forward-auth example:
+
+```yaml
+labels:
+  traefik.http.routers.wishlist.middlewares: authelia@docker
+```
+
+With the standard Authelia forward-auth middleware, **the proxy must strip any
+client-supplied `X-Forwarded-User` header and set it only after Authelia
+validates the session** — otherwise a visitor could forge their identity.
+
+Exact proxy/header configuration depends on your reverse proxy; see the
+Authelia "Forward auth" documentation.
+
 ## Development
 
 ```bash
