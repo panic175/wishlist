@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq, asc } from 'drizzle-orm';
 import { db, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
+import { validateSlug, validateHttpUrl } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -68,6 +69,16 @@ export async function POST(request: NextRequest) {
         { error: 'Name and slug are required' },
         { status: 400 }
       );
+    }
+
+    const slugError = validateSlug(slug);
+    if (slugError) {
+      return NextResponse.json({ error: slugError }, { status: 400 });
+    }
+
+    const imageError = validateHttpUrl(imageUrl);
+    if (imageError) {
+      return NextResponse.json({ error: imageError }, { status: 400 });
     }
 
     // Check if slug already exists

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
+import { validateSlug, validateHttpUrl } from '@/lib/validation';
 
 export async function GET(
   request: NextRequest,
@@ -93,8 +94,13 @@ export async function PATCH(
       );
     }
 
-    // If slug is being changed, check if new slug is available
-    if (slug && slug !== existingWishlist[0].slug) {
+    // Validate new slug before checking availability
+    if (slug !== undefined && slug !== existingWishlist[0].slug) {
+      const slugError = validateSlug(slug);
+      if (slugError) {
+        return NextResponse.json({ error: slugError }, { status: 400 });
+      }
+
       const slugExists = await db
         .select()
         .from(wishlists)
@@ -110,14 +116,20 @@ export async function PATCH(
     }
 
     // Build update object (only include provided fields)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
     if (name !== undefined) updateData.name = name;
     if (slug !== undefined) updateData.slug = slug;
     if (description !== undefined) updateData.description = description;
-    if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (imageUrl !== undefined) {
+      const imageError = validateHttpUrl(imageUrl);
+      if (imageError) {
+        return NextResponse.json({ error: imageError }, { status: 400 });
+      }
+      updateData.imageUrl = imageUrl;
+    }
     if (isPublic !== undefined) updateData.isPublic = isPublic;
 
     // Update wishlist
