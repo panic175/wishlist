@@ -139,7 +139,7 @@ the app converts into its own session.
 
 ```env
 AUTHELIA_ENABLED=true
-AUTHELIA_USER_HEADER=X-Forwarded-User   # header the proxy sets after Authelia auth
+AUTHELIA_USER_HEADER=Remote-User   # must match the forwardauth authResponseHeaders below
 AUTHELIA_PORTAL_URL=https://auth.example.com   # shown on the admin login page
 ```
 
@@ -166,12 +166,14 @@ On the **Authelia** container, expose a forward-auth middleware:
 labels:
   traefik.http.middlewares.authelia.forwardauth.address: http://authelia:9091/api/authz/forward-auth
   traefik.http.middlewares.authelia.forwardauth.trustForwardHeader: "true"
-  traefik.http.middlewares.authelia.forwardauth.authResponseHeaders: X-Forwarded-User
+  traefik.http.middlewares.authelia.forwardauth.authResponseHeaders: Remote-User
 ```
 
 `trustForwardHeader: true` makes Traefik **always overwrite** a client-supplied
-`X-Forwarded-User` with the value Authelia verified, so a visitor cannot forge
-their identity — this is what satisfies the header-trust requirement.
+header matching the configured `authResponseHeaders` with the value Authelia
+verified, so a visitor cannot forge their identity — this is what satisfies the
+header-trust requirement. `AUTHELIA_USER_HEADER` (default `Remote-User`) must
+match whatever `authResponseHeaders` on your Authelia container is set to.
 
 On the **wishlist** container, the two routers (see `docker-compose.yml`). The
 domain comes from the `WISHLIST_DOMAIN` env var (defaults to `wishlist.example.com`):

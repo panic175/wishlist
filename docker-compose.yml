@@ -11,9 +11,11 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
       # Authelia forward-auth (protects the /admin area via Traefik)
-      - AUTHELIA_ENABLED=true
-      - AUTHELIA_USER_HEADER=X-Forwarded-User
-      - AUTHELIA_PORTAL_URL=https://auth.example.com
+      - AUTHELIA_ENABLED=${AUTHELIA_ENABLED:-true}
+      # Must match the header Authelia's forwardAuthMiddleware injects
+      # (authResponseHeaders on the Authelia container = Remote-User).
+      - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-Remote-User}
+      - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-https://auth.home.niemann.dev}
     # Embed the image build (required to ship the Authelia/CSV/scraper code):
     # it must be a version of THIS repo, otherwise the env vars above do nothing.
     build:
