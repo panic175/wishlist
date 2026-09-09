@@ -4,22 +4,14 @@ import { generateAccessToken, generateRefreshToken, isSecureCookie } from './uti
 // authenticates the request with any identity provider (Authelia, Keycloak,
 // Authentik, Ory, ...) and injects the verified username into a header that
 // this app converts into its own session. No provider-specific logic lives here.
-//
-// The `AUTHELIA_*` names are kept as deprecated aliases so existing
-// deployments keep working.
 
 type CookieSecureRequest = { headers: { get(name: string): string | null }; url: string };
 
 /**
- * Forward-auth is on when FORWARD_AUTH_ENABLED=true, or (deprecated alias)
- * when AUTHELIA_ENABLED=true. A set FORWARD_AUTH_ENABLED wins; an empty value
- * (e.g. an unset compose passthrough) is treated as unset so the alias still
- * applies.
+ * Forward-auth is on when FORWARD_AUTH_ENABLED=true.
  */
 export function isForwardAuthEnabled(): boolean {
-  const enabled = process.env.FORWARD_AUTH_ENABLED;
-  if (enabled) return enabled === 'true';
-  return process.env.AUTHELIA_ENABLED === 'true';
+  return process.env.FORWARD_AUTH_ENABLED === 'true';
 }
 
 /**
@@ -29,11 +21,7 @@ export function isForwardAuthEnabled(): boolean {
  * `X-Forwarded-User`.
  */
 export function getForwardAuthUserHeader(): string {
-  return (
-    process.env.FORWARD_AUTH_USER_HEADER ||
-    process.env.AUTHELIA_USER_HEADER ||
-    'X-Forwarded-User'
-  );
+  return process.env.FORWARD_AUTH_USER_HEADER || 'X-Forwarded-User';
 }
 
 /**
@@ -49,7 +37,7 @@ export function getForwardAuthProviderName(): string {
  * Portal URL shown on the admin login page as the sign-in link.
  */
 export function getForwardAuthPortalUrl(): string | undefined {
-  return process.env.FORWARD_AUTH_PORTAL_URL || process.env.AUTHELIA_PORTAL_URL;
+  return process.env.FORWARD_AUTH_PORTAL_URL;
 }
 
 /**

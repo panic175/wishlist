@@ -146,10 +146,6 @@ FORWARD_AUTH_PORTAL_URL=https://auth.example.com   # shown on the admin login pa
 FORWARD_AUTH_PROVIDER_NAME=Keycloak    # optional - "Continue with Keycloak"; defaults to "SSO"
 ```
 
-> The `AUTHELIA_ENABLED`, `AUTHELIA_USER_HEADER` and `AUTHELIA_PORTAL_URL`
-> variables are deprecated aliases still accepted for existing deployments.
-> `FORWARD_AUTH_*` win when both are set.
-
 When enabled:
 - The built-in admin login is disabled (`POST /api/auth/login` returns 403).
 - `/admin/login` becomes a "Continue with {provider}" link to the portal.

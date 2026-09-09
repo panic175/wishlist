@@ -9,9 +9,9 @@ Security-relevant configuration for self-hosting behind a reverse proxy.
 | `SECRET`, `REFRESH_SECRET` | JWT signing keys. **Set explicitly in production.** Auto-generated keys are persisted to `data/secrets.json`; on ephemeral/container storage they rotate on every restart and log everyone out. |
 | `ADMIN_USERNAME` | Admin login username (default `admin`). |
 | `ADMIN_PASSWORD` | Plaintext fallback credential. Use `ADMIN_PASSWORD_HASH` instead (scrypt; `npx tsx -e "import {hashPassword} from './lib/auth/password'; console.log(hashPassword('...'))"`). The default `changeme` is refused. |
-| `FORWARD_AUTH_ENABLED` | `true` → `/api/auth/login` is disabled and the app trusts the forward-auth identity header. Works with any identity provider (Authelia, Keycloak, Authentik, ...). `AUTHELIA_ENABLED` is a deprecated alias. |
-| `FORWARD_AUTH_USER_HEADER` | Header the reverse proxy injects with the authenticated username (default `X-Forwarded-User`). `AUTHELIA_USER_HEADER` is a deprecated alias. |
-| `FORWARD_AUTH_PORTAL_URL` | Identity-provider portal URL shown on the admin login page. `AUTHELIA_PORTAL_URL` is a deprecated alias. |
+| `FORWARD_AUTH_ENABLED` | `true` → `/api/auth/login` is disabled and the app trusts the forward-auth identity header. Works with any identity provider (Authelia, Keycloak, Authentik, ...). |
+| `FORWARD_AUTH_USER_HEADER` | Header the reverse proxy injects with the authenticated username (default `X-Forwarded-User`). |
+| `FORWARD_AUTH_PORTAL_URL` | Identity-provider portal URL shown on the admin login page. |
 | `FORWARD_AUTH_PROVIDER_NAME` | Display name for the "Continue with {provider}" button (default `SSO`). |
 | `TRUST_PROXY_HEADERS` | `true` only when running behind a proxy that overwrites `X-Forwarded-For`/`X-Real-IP` for **every** request. Off by default: proxy IP headers are spoofable and would otherwise defeat per-IP rate limits. |
 | `COOKIE_SECURE` | `true` forces Secure cookies. Leave unset to auto-detect from `X-Forwarded-Proto`/https in production. Set explicitly when TLS terminates at the proxy. |

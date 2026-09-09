@@ -12,17 +12,13 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
       # Forward-auth SSO (protects the /admin area via Traefik). Works with any
       # identity provider that can forward-authenticate (Authelia, Keycloak,
-      # Authentik, ...). AUTHELIA_ENABLED/AUTHELIA_USER_HEADER are deprecated
-      # aliases still accepted by the app if you have not migrated yet.
+      # Authentik, ...).
       - FORWARD_AUTH_ENABLED=${FORWARD_AUTH_ENABLED:-true}
       # Must match the header your proxy's forward-auth middleware injects
       # (e.g. authResponseHeaders = Remote-User).
       - FORWARD_AUTH_USER_HEADER=${FORWARD_AUTH_USER_HEADER:-Remote-User}
       - FORWARD_AUTH_PORTAL_URL=${FORWARD_AUTH_PORTAL_URL:-https://auth.home.niemann.dev}
       - FORWARD_AUTH_PROVIDER_NAME=${FORWARD_AUTH_PROVIDER_NAME:-SSO}
-      - AUTHELIA_ENABLED=${AUTHELIA_ENABLED:-}
-      - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-}
-      - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-}
     # Embed the image build (required to ship the Authelia/CSV/scraper code):
     # it must be a version of THIS repo, otherwise the env vars above do nothing.
     build:
