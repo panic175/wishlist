@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
       settingsObj.defaultCurrency = process.env.DEFAULT_CURRENCY || 'USD';
     }
 
+    // Never expose the password-lock hash (or any future secret) to clients.
+    delete settingsObj.passwordLockHash;
+
     // Convert passwordLockEnabled to boolean
     (settingsObj as any).passwordLockEnabled = settingsObj.passwordLockEnabled === 'true';
 
