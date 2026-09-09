@@ -7,12 +7,25 @@ export interface ApiError {
   status: number;
 }
 
+function isAuthEndpoint(url: string): boolean {
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/logout') ||
+    url.includes('/auth/refresh') ||
+    url.includes('/auth/me')
+  );
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'An error occurred' }));
     // Extract error message from various possible response formats
     const message = error.error || error.message || 'An error occurred';
-    console.error('API Error:', { status: response.status, message, fullError: error });
+    // A 401 from an auth endpoint (e.g. /auth/me probing the session) is
+    // expected control flow for unauthenticated visitors, not an error.
+    if (!(response.status === 401 && isAuthEndpoint(response.url))) {
+      console.error('API Error:', { status: response.status, message });
+    }
     throw { message, status: response.status } as ApiError;
   }
 
