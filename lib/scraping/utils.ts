@@ -1,23 +1,53 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { assertSafeScrapeUrl } from './ssrf';
 
 export const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 
+const MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB
+const MAX_REDIRECTS = 3;
+const REDIRECT_STATUS_CODES = new Set([301, 302, 303, 307, 308]);
+
 export async function fetchHtml(url: string): Promise<string> {
-  try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': USER_AGENT,
-      },
-      timeout: 10000,
-    });
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      `Failed to fetch URL: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+  // Every hop (initial request and each redirect) is validated against the
+  // SSRF rules before a connection is made.
+  let currentUrl = (await assertSafeScrapeUrl(url)).toString();
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    try {
+      const response = await axios.get(currentUrl, {
+        headers: {
+          'User-Agent': USER_AGENT,
+        },
+        timeout: 10000,
+        maxContentLength: MAX_CONTENT_LENGTH,
+        maxBodyLength: MAX_CONTENT_LENGTH,
+        maxRedirects: 0,
+      });
+      return response.data;
+    } catch (error) {
+      // Manually follow redirects so each hop can be re-validated. axios
+      // surfaces non-2xx responses as an error with `response` attached.
+      if (axios.isAxiosError(error) && error.response) {
+        const status = error.response.status;
+        if (REDIRECT_STATUS_CODES.has(status)) {
+          const location = error.response.headers.location;
+          if (!location) {
+            throw new Error('Failed to fetch URL: redirect without a Location header');
+          }
+          const nextUrl = new URL(location, currentUrl).toString();
+          currentUrl = (await assertSafeScrapeUrl(nextUrl)).toString();
+          continue;
+        }
+      }
+      throw new Error(
+        `Failed to fetch URL: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
   }
+
+  throw new Error(`Failed to fetch URL: too many redirects (max ${MAX_REDIRECTS})`);
 }
 
 export function loadDocument(html: string): cheerio.CheerioAPI {

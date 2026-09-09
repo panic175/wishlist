@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { scrapeUrl } from '@/lib/scraping';
+import { isHttpUrl } from '@/lib/scraping/ssrf';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,11 +33,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate URL format
-    try {
-      const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
-      new URL(normalizedUrl);
-    } catch (error) {
+    // Validate URL format (schemes restricted to http/https)
+    const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+    if (!isHttpUrl(normalizedUrl)) {
       return NextResponse.json(
         { error: 'Invalid URL format' },
         { status: 400 }
@@ -55,7 +54,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to scrape URL',
-        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
