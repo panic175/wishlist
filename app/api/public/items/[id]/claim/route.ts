@@ -5,6 +5,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 const CLAIM_WINDOW_MS = 60 * 1000;
 const CLAIM_MAX_REQUESTS = 10;
@@ -30,8 +31,8 @@ export async function POST(
     if (locked) return locked;
 
     const { id } = await params;
-    const body = await request.json();
-    const { name, note } = body;
+    const body = await parseJsonBody<{ name?: string; note?: string }>(request);
+    const { name, note } = body || {};
 
     // Get the item
     const item = await db

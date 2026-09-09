@@ -4,6 +4,7 @@ import { db, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { validateSlug, validateHttpUrl } from '@/lib/validation';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = (await parseJsonBody<{ name?: string; slug?: string; description?: string; imageUrl?: string; isPublic?: boolean }>(request)) ?? {};
     const { name, slug, description, imageUrl, isPublic } = body;
 
     // Validation

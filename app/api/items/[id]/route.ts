@@ -5,6 +5,7 @@ import { verifyAccessToken } from '@/lib/auth/utils';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
 import { validateHttpUrl, validatePurchaseUrls } from '@/lib/validation';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 export async function GET(
   request: NextRequest,
@@ -103,7 +104,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = (await parseJsonBody<{ name?: string; description?: string; price?: number | null; currency?: string; quantity?: number; imageUrl?: string; purchaseUrls?: Array<{ label?: string; url?: string; price?: number | null; currency?: string; imageUrl?: string }>; isArchived?: boolean }>(request)) ?? {};
     const {
       name,
       description,

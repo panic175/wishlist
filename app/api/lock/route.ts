@@ -6,6 +6,7 @@ import { isSecureCookie } from '@/lib/auth/utils';
 import { verifyPassword } from '@/lib/auth/password';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 const LOCK_WINDOW_MS = 60 * 1000;
 const LOCK_MAX_ATTEMPTS = 10;
@@ -23,8 +24,8 @@ export async function POST(request: NextRequest) {
       return tooManyRequestsResponse(limit.resetAt - Date.now());
     }
 
-    const body = await request.json();
-    const { password } = body;
+    const body = await parseJsonBody<{ password?: string }>(request);
+    const { password } = body || {};
 
     if (!password) {
       return NextResponse.json(

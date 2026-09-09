@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateAccessToken, generateRefreshToken, validateAdminCredentials, isSecureCookie } from '@/lib/auth/utils';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { csrfGuard } from '@/lib/csrf';
+import { parseJsonBody } from '@/lib/request';
 
 const LOGIN_WINDOW_MS = 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 5;
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
       return tooManyRequestsResponse(limit.resetAt - Date.now());
     }
 
-    const body = await request.json();
-    const { username, password } = body;
+    const body = await parseJsonBody<{ username?: string; password?: string }>(request);
+    const { username, password } = body || {};
 
     if (!username || !password) {
       return NextResponse.json(

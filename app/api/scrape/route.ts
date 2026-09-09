@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { scrapeUrl } from '@/lib/scraping';
 import { isHttpUrl } from '@/lib/scraping/ssrf';
+import { parseJsonBody } from '@/lib/request';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 
 const SCRAPE_WINDOW_MS = 60 * 1000;
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
       return tooManyRequestsResponse(limit.resetAt - Date.now());
     }
 
-    const body = await request.json();
+    const body = (await parseJsonBody<{ url?: string }>(request)) ?? {};
     const { url } = body;
 
     // Validation
