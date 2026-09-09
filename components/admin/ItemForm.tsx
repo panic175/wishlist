@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ImageUpload from '@/components/image-upload';
 import PurchaseUrlFields from './PurchaseUrlFields';
 import { type Item } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n/provider';
+
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'JPY'] as const;
 
 interface ItemFormProps {
   item?: Partial<Item>;
@@ -29,6 +31,28 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
   );
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (mode !== 'create') return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (active && data?.settings?.defaultCurrency) {
+          setFormData((prev) => ({
+            ...prev,
+            currency: data.settings.defaultCurrency,
+          }));
+        }
+      } catch {
+        // keep default
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +109,24 @@ export default function ItemForm({ item, onSubmit, onCancel, mode, error }: Item
               }))
             }
           />
+        </div>
+        <div>
+          <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('itemForm.currency')}
+          </label>
+          <select
+            className="w-full px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+            value={formData.currency || 'USD'}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, currency: e.target.value }))
+            }
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {t(`currency.${c}`)}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="md:col-span-2">
           <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">

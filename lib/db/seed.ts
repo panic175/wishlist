@@ -24,6 +24,14 @@ export async function seedDatabase() {
         key: 'homepageSubtext',
         value: 'Hello! Thank you so much for thinking of us! When you purchase something from our list, just click "Claim" to mark it. We promise not to peek at what\'s been claimed. This works on the honor system, so please only claim items you\'ve actually bought. We appreciate you!',
       },
+      {
+        key: 'language',
+        value: 'en',
+      },
+      {
+        key: 'defaultCurrency',
+        value: 'USD',
+      },
     ]);
 
     // Create sample wishlists
