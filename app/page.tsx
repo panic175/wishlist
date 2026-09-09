@@ -56,7 +56,7 @@ export default function Home() {
         />
 
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto py-12 sm:px-6 lg:px-8">
+        <main className="max-w-4xl mx-auto py-12 sm:px-6 lg:px-8">
           <div className="px-4 sm:px-0">
             {isLoading ? (
               <div className="text-center py-12">
@@ -81,13 +81,14 @@ export default function Home() {
                             src={wishlist.imageUrl}
                             alt={wishlist.name}
                             className="w-full h-48 md:h-full object-cover"
+                            fetchPriority="high"
                           />
                         </div>
                       )}
                       <div className="p-8 flex-1">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
                           {wishlist.name}
-                        </h3>
+                        </h2>
                         {wishlist.description && (
                           <p className="text-base text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
                             {wishlist.description}
@@ -100,7 +101,7 @@ export default function Home() {
               </div>
             )}
           </div>
-        </div>
+        </main>
 
         <Footer />
       </div>
