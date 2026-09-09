@@ -254,7 +254,7 @@ export default function PublicWishlistPage() {
                                   {url.label}
                                 </span>
                                 <span className="text-gray-900 dark:text-white font-bold text-lg">
-                                  {item.price && formatPrice(item.price, item.currency)}
+                                  {url.price ? formatPrice(url.price, url.currency || item.currency) : item.price ? formatPrice(item.price, item.currency) : ''}
                                 </span>
                               </a>
                             ))}

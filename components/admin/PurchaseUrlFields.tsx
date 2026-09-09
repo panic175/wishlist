@@ -72,6 +72,11 @@ export default function PurchaseUrlFields({
               onChange={(e) => handleUpdate(index, 'url', e.target.value)}
               className="flex-1 px-2 py-1.5 text-base border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
             />
+            {(urlObj.price !== undefined && urlObj.price !== null) && (
+              <span className="flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded whitespace-nowrap">
+                {urlObj.price.toFixed(2)} {urlObj.currency || ''}
+              </span>
+            )}
             {itemId && urlObj.url && (
               <button
                 type="button"
