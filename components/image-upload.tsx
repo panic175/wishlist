@@ -25,6 +25,7 @@ export default function ImageUpload({
   const [uploadError, setUploadError] = useState('');
   const [imageUrl, setImageUrl] = useState(currentImageUrl || '');
   const [useUrl, setUseUrl] = useState(!!currentImageUrl);
+  const [previewError, setPreviewError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pasteAreaRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +69,7 @@ export default function ImageUpload({
         try {
           const data = JSON.parse(xhr.responseText);
           setImageUrl(data.url);
+          setPreviewError(false);
           onImageChange(data.url);
           setUploadProgress(100);
         } catch (error) {
@@ -159,11 +161,13 @@ export default function ImageUpload({
 
   const handleUrlChange = (url: string) => {
     setImageUrl(url);
+    setPreviewError(false);
     onImageChange(url);
   };
 
   const handleRemoveImage = () => {
     setImageUrl('');
+    setPreviewError(false);
     onImageChange('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -204,10 +208,10 @@ export default function ImageUpload({
           <img
             src={imageUrl}
             alt="Preview"
-            className="w-full h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
+            className={`w-full h-32 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 ${
+              previewError ? 'hidden' : ''
+            }`}
+            onError={() => setPreviewError(true)}
           />
           <button
             type="button"
@@ -291,10 +295,7 @@ export default function ImageUpload({
                 <span className="font-medium">{Math.round(uploadProgress)}%</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                <div
-                  className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${uploadProgress}%` }}
-                ></div>
+                <div className="bg-indigo-600 h-2.5 rounded-full animate-pulse"></div>
               </div>
             </div>
           )}

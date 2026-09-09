@@ -42,6 +42,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// Nonce-based CSP requires a fresh nonce per request, which is only possible
+// with dynamic (per-request) rendering — statically prerendered pages would
+// carry inline scripts whose nonce no longer matches the header.
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: Readonly<{

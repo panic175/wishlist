@@ -1,5 +1,7 @@
 'use client';
 
+import './globals.css';
+import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/provider';
 
 export default function RootNotFound() {
@@ -8,45 +10,21 @@ export default function RootNotFound() {
   return (
     <html lang={lang}>
       <body>
-        <div style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: 'system-ui, sans-serif',
-          padding: '1rem'
-        }}>
-          <div style={{
-            maxWidth: '28rem',
-            width: '100%',
-            textAlign: 'center',
-            padding: '2rem',
-            backgroundColor: 'white',
-            borderRadius: '0.5rem',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-          }}>
-            <div style={{ fontSize: '3.75rem', fontWeight: 'bold', color: '#1f2937' }}>404</div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginTop: '1rem' }}>
+        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-md w-full text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <div className="text-6xl font-bold text-gray-800 dark:text-gray-200">404</div>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mt-4">
               {t('notFound.title')}
             </h1>
-            <p style={{ color: '#4b5563', marginTop: '1rem' }}>
+            <p className="text-gray-600 dark:text-gray-400 mt-4">
               {t('notFound.body')}
             </p>
-            <a
+            <Link
               href="/"
-              style={{
-                display: 'inline-block',
-                marginTop: '1.5rem',
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#2563eb',
-                color: 'white',
-                borderRadius: '0.5rem',
-                fontWeight: '600',
-                textDecoration: 'none'
-              }}
+              className="inline-block mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold no-underline"
             >
               {t('notFound.goHome')}
-            </a>
+            </Link>
           </div>
         </div>
       </body>
