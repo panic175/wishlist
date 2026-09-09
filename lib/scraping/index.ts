@@ -22,7 +22,17 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
 
     const scraper: Scraper = scrapers.find((s) => s.matches(hostname)) ?? scrapers[scrapers.length - 1];
 
-    return scraper.scrape($, normalizedUrl);
+    const scraped = scraper.scrape($, normalizedUrl);
+
+    if (scraped.imageUrl) {
+      try {
+        scraped.imageUrl = new URL(scraped.imageUrl, normalizedUrl).toString();
+      } catch {
+        // Keep the scraper's value when it is not a valid URL.
+      }
+    }
+
+    return scraped;
   } catch (error) {
     throw new Error(`Scraping failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }

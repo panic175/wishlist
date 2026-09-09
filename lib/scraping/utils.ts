@@ -123,8 +123,17 @@ export function extractJsonLdProduct($: cheerio.CheerioAPI): JsonLdProduct | nul
       if (result.imageUrl === null) {
         if (typeof image === 'string') result.imageUrl = image;
         else if (Array.isArray(image)) {
-          const first = image.find((i) => typeof i === 'string');
+          const first = image.find(
+            (item) =>
+              typeof item === 'string' ||
+              (item && typeof item === 'object' && typeof (item as Record<string, unknown>).url === 'string')
+          );
           if (typeof first === 'string') result.imageUrl = first;
+          else if (first && typeof first === 'object' && typeof first.url === 'string') {
+            result.imageUrl = first.url;
+          }
+        } else if (image && typeof image === 'object' && typeof (image as Record<string, unknown>).url === 'string') {
+          result.imageUrl = (image as Record<string, string>).url;
         }
       }
 
