@@ -3,21 +3,9 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken, isSecure
 
 export async function POST(request: NextRequest) {
   try {
-    // Get refresh token from cookie or body
-    let refreshToken: string | undefined;
-
-    const cookieToken = request.cookies.get('refresh_token')?.value;
-    if (cookieToken) {
-      refreshToken = cookieToken;
-    } else {
-      try {
-        const body = await request.json();
-        refreshToken = body.refreshToken;
-      } catch {
-        // No body or invalid JSON, continue without it
-        refreshToken = undefined;
-      }
-    }
+    // Refresh tokens are only accepted from the httpOnly cookie, never from
+    // the request body, so a leaked/replayed token cannot be used directly.
+    const refreshToken = request.cookies.get('refresh_token')?.value;
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -39,11 +27,9 @@ export async function POST(request: NextRequest) {
     const newAccessToken = generateAccessToken(payload.username);
     const newRefreshToken = generateRefreshToken(payload.username);
 
-    // Create response
+    // Create response. Tokens are only delivered as httpOnly cookies.
     const response = NextResponse.json({
       success: true,
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
     });
 
     // Set new cookies
@@ -56,12 +42,12 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set('access_token', newAccessToken, {
       ...cookieOptions,
-      maxAge: 72 * 60 * 60, // 72 hours
+      maxAge: 15 * 60, // 15 minutes
     });
 
     response.cookies.set('refresh_token', newRefreshToken, {
       ...cookieOptions,
-      maxAge: 30 * 24 * 60 * 60, // 30 days
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
     return response;

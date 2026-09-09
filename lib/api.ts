@@ -7,6 +7,54 @@ export interface ApiError {
   status: number;
 }
 
+/**
+ * Single-flight refresh token rotation. Because access tokens are short-lived
+ * (15 minutes), a single 401 triggers a refresh of the token pair; concurrent
+ * requests share one refresh so we do not rotate the refresh token repeatedly.
+ */
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+function isAuthEndpoint(url: string): boolean {
+  return (
+    url.includes('/auth/login') ||
+    url.includes('/auth/logout') ||
+    url.includes('/auth/refresh') ||
+    url.includes('/auth/me')
+  );
+}
+
+/**
+ * fetch wrapper that transparently refreshes the session when an API call
+ * returns 401 because the short-lived access token expired, then retries once.
+ */
+async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  let response = await fetch(url, options);
+
+  if (response.status === 401 && !isAuthEndpoint(url)) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      response = await fetch(url, options);
+    }
+  }
+
+  return response;
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'An error occurred' }));
@@ -23,34 +71,36 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // Auth API
 export const authApi = {
+  // Tokens are set as httpOnly cookies by the server and never returned to
+  // JavaScript, so the client only needs to know the call succeeded.
   async login(username: string, password: string) {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ username, password }),
     });
-    return handleResponse<{ accessToken: string; refreshToken: string }>(response);
+    await handleResponse(response);
   },
 
   async logout() {
-    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
-    return handleResponse<void>(response);
+    await handleResponse<void>(response);
   },
 
   async refresh() {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
       credentials: 'include',
     });
-    return handleResponse<{ accessToken: string }>(response);
+    await handleResponse<void>(response);
   },
 
   async me() {
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    const response = await apiFetch(`${API_BASE_URL}/auth/me`, {
       credentials: 'include',
     });
     return handleResponse<{ username: string }>(response);
@@ -102,7 +152,7 @@ export interface Item {
 // Wishlists API
 export const wishlistsApi = {
   async getAll() {
-    const response = await fetch(`${API_BASE_URL}/wishlists`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists`, {
       credentials: 'include',
     });
     const data = await handleResponse<{ success: boolean; wishlists: Wishlist[] }>(response);
@@ -110,7 +160,7 @@ export const wishlistsApi = {
   },
 
   async getAllPublic() {
-    const response = await fetch(`${API_BASE_URL}/public/wishlists`, {
+    const response = await apiFetch(`${API_BASE_URL}/public/wishlists`, {
       credentials: 'include',
     });
     const data = await handleResponse<{ success: boolean; wishlists: Wishlist[] }>(response);
@@ -118,7 +168,7 @@ export const wishlistsApi = {
   },
 
   async getOne(id: string) {
-    const response = await fetch(`${API_BASE_URL}/wishlists/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists/${id}`, {
       credentials: 'include',
     });
     const result = await handleResponse<{ success: boolean; wishlist: Wishlist }>(response);
@@ -126,7 +176,7 @@ export const wishlistsApi = {
   },
 
   async getBySlug(slug: string) {
-    const response = await fetch(`${API_BASE_URL}/${slug}`, {
+    const response = await apiFetch(`${API_BASE_URL}/${slug}`, {
       credentials: 'include',
     });
     const result = await handleResponse<{ success: boolean; wishlist: Wishlist }>(response);
@@ -134,7 +184,7 @@ export const wishlistsApi = {
   },
 
   async create(data: Partial<Wishlist>) {
-    const response = await fetch(`${API_BASE_URL}/wishlists`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -147,7 +197,7 @@ export const wishlistsApi = {
   },
 
   async update(id: string, data: Partial<Wishlist>) {
-    const response = await fetch(`${API_BASE_URL}/wishlists/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -160,7 +210,7 @@ export const wishlistsApi = {
   },
 
   async delete(id: string) {
-    const response = await fetch(`${API_BASE_URL}/wishlists/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -168,7 +218,7 @@ export const wishlistsApi = {
   },
 
   async reorder(id: string, newSortOrder: number) {
-    const response = await fetch(`${API_BASE_URL}/wishlists/${id}/reorder`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists/${id}/reorder`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -184,7 +234,7 @@ export const wishlistsApi = {
 // Items API
 export const itemsApi = {
   async getAll(wishlistId: string) {
-    const response = await fetch(`${API_BASE_URL}/wishlists/${wishlistId}/items`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists/${wishlistId}/items`, {
       credentials: 'include',
     });
     const result = await handleResponse<{ success: boolean; items: Item[] }>(response);
@@ -192,14 +242,14 @@ export const itemsApi = {
   },
 
   async getOne(id: string) {
-    const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/items/${id}`, {
       credentials: 'include',
     });
     return handleResponse<Item>(response);
   },
 
   async create(wishlistId: string, data: Partial<Item>) {
-    const response = await fetch(`${API_BASE_URL}/wishlists/${wishlistId}/items`, {
+    const response = await apiFetch(`${API_BASE_URL}/wishlists/${wishlistId}/items`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -211,7 +261,7 @@ export const itemsApi = {
   },
 
   async update(id: string, data: Partial<Item>) {
-    const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/items/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -223,7 +273,7 @@ export const itemsApi = {
   },
 
   async delete(id: string) {
-    const response = await fetch(`${API_BASE_URL}/items/${id}`, {
+    const response = await apiFetch(`${API_BASE_URL}/items/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -231,7 +281,7 @@ export const itemsApi = {
   },
 
   async reorder(id: string, newSortOrder: number) {
-    const response = await fetch(`${API_BASE_URL}/items/${id}/reorder`, {
+    const response = await apiFetch(`${API_BASE_URL}/items/${id}/reorder`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -247,7 +297,7 @@ export const itemsApi = {
 // Claiming API (public)
 export const claimingApi = {
   async claim(itemId: string, name?: string, note?: string) {
-    const response = await fetch(`${API_BASE_URL}/public/items/${itemId}/claim`, {
+    const response = await apiFetch(`${API_BASE_URL}/public/items/${itemId}/claim`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -257,7 +307,7 @@ export const claimingApi = {
   },
 
   async unclaim(itemId: string) {
-    const response = await fetch(`${API_BASE_URL}/public/items/${itemId}/unclaim`, {
+    const response = await apiFetch(`${API_BASE_URL}/public/items/${itemId}/unclaim`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -278,7 +328,7 @@ export interface ScrapedData {
 
 export const scrapingApi = {
   async scrapeUrl(url: string) {
-    const response = await fetch(`${API_BASE_URL}/scrape`, {
+    const response = await apiFetch(`${API_BASE_URL}/scrape`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -303,7 +353,7 @@ export interface Settings {
 
 export const settingsApi = {
   async getSettings() {
-    const response = await fetch(`${API_BASE_URL}/settings`, {
+    const response = await apiFetch(`${API_BASE_URL}/settings`, {
       credentials: 'include',
     });
     const result = await handleResponse<{ success: boolean; settings: Settings }>(response);
@@ -311,7 +361,7 @@ export const settingsApi = {
   },
 
   async updateSettings(settings: Partial<Settings>) {
-    const response = await fetch(`${API_BASE_URL}/settings`, {
+    const response = await apiFetch(`${API_BASE_URL}/settings`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
