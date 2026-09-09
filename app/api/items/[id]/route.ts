@@ -97,6 +97,7 @@ export async function PATCH(
       imageUrl,
       purchaseUrls,
       isArchived,
+      isPurchased,
     } = body;
 
     // Check if item exists
@@ -126,6 +127,7 @@ export async function PATCH(
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
     if (purchaseUrls !== undefined) updateData.purchaseUrls = purchaseUrls;
     if (isArchived !== undefined) updateData.isArchived = isArchived;
+    if (isPurchased !== undefined) updateData.isPurchased = isPurchased;
 
     if (currency !== undefined && currency !== existingItem[0].currency) {
       const urls = purchaseUrls !== undefined

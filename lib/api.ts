@@ -53,7 +53,8 @@ export const authApi = {
     const response = await fetch(`${API_BASE_URL}/auth/me`, {
       credentials: 'include',
     });
-    return handleResponse<{ username: string }>(response);
+    const data = await handleResponse<{ success: boolean; user: { username: string } }>(response);
+    return data.user;
   },
 };
 

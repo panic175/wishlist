@@ -9,6 +9,8 @@ interface ItemCardProps {
   onDelete: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  onUnclaimItem: () => void;
+  onTogglePurchased: () => void;
   isFirst: boolean;
   isLast: boolean;
 }
@@ -19,6 +21,8 @@ export default function ItemCard({
   onDelete,
   onMoveUp,
   onMoveDown,
+  onUnclaimItem,
+  onTogglePurchased,
   isFirst,
   isLast,
 }: ItemCardProps) {
@@ -78,6 +82,34 @@ export default function ItemCard({
               <p className="text-base text-gray-500 dark:text-gray-400 mt-1">
                 {item.price.toFixed(2)} {item.currency}
               </p>
+            )}
+            {item.claimedAt && (
+              <div className="mt-3 space-y-1">
+                <p className="text-sm font-semibold text-green-700 dark:text-green-300">
+                  {t('wishlist.claimedBy', { name: item.claimedByName || '' })}
+                </p>
+                {item.claimedByNote && (
+                  <p className="text-xs text-green-700 dark:text-green-300">
+                    {t('wishlist.note', { note: item.claimedByNote })}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={onUnclaimItem}
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors cursor-pointer"
+                  >
+                    {t('admin.removeReservation')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onTogglePurchased}
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors cursor-pointer"
+                  >
+                    {item.isPurchased ? t('admin.markNotPurchased') : t('admin.markPurchased')}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
