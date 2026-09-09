@@ -8,11 +8,16 @@ import type { ApiError } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n/provider';
 
 interface LoginFormProps {
-  autheliaEnabled: boolean;
-  autheliaPortalUrl?: string;
+  forwardAuthEnabled: boolean;
+  forwardAuthProviderName: string;
+  forwardAuthPortalUrl?: string;
 }
 
-export default function LoginForm({ autheliaEnabled, autheliaPortalUrl }: LoginFormProps) {
+export default function LoginForm({
+  forwardAuthEnabled,
+  forwardAuthProviderName,
+  forwardAuthPortalUrl,
+}: LoginFormProps) {
   const { t } = useLanguage();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -87,16 +92,16 @@ export default function LoginForm({ autheliaEnabled, autheliaPortalUrl }: LoginF
       <div className="max-w-4xl mx-auto py-12 sm:px-6 lg:px-8">
         <div className="px-4 sm:px-0">
           <div className="max-w-md mx-auto">
-            {autheliaEnabled ? (
+            {forwardAuthEnabled ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 p-8 space-y-6 text-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('login.autheliaSubtitle')}
+                  {t('login.forwardAuthSubtitle', { provider: forwardAuthProviderName })}
                 </p>
                 <a
-                  href={autheliaPortalUrl || '/'}
+                  href={forwardAuthPortalUrl || '/'}
                   className="inline-flex w-full justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-md hover:shadow-lg transition-all"
                 >
-                  {t('login.authelia')}
+                  {t('login.forwardAuth', { provider: forwardAuthProviderName })}
                 </a>
               </div>
             ) : (

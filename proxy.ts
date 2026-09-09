@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import {
-  createAutheliaSession,
-  getAutheliaUser,
-  getAutheliaUserHeader,
-} from '@/lib/auth/authelia';
+  createForwardAuthSession,
+  getForwardAuthUser,
+  getForwardAuthUserHeader,
+} from '@/lib/auth/forward-auth';
 
 /**
  * Admin gate running on the Node.js runtime (Next.js 16 proxy).
  *
  * Maintains two identity sources:
  * 1. The app's own JWT session (access_token cookie) — used after the first
- *    Authelia handshake or in standalone (non-Authelia) deployments.
- * 2. Authelia forward-auth: when AUTHELIA_ENABLED=true, a trusted reverse
- *    proxy runs every /admin request through Authelia and injects the resolved
- *    user into AUTHELIA_USER_HEADER (default X-Forwarded-User). The proxy then
+ *    forward-auth handshake or in standalone deployments.
+ * 2. Forward-auth: when FORWARD_AUTH_ENABLED=true, a trusted reverse proxy
+ *    runs every /admin request through an identity provider (Authelia,
+ *    Keycloak, Authentik, ...) and injects the resolved user into
+ *    FORWARD_AUTH_USER_HEADER (default X-Forwarded-User). The proxy then
  *    provisions an app session from that header.
  *
  * Route handlers remain the enforcement layer (they 401 without a valid token);
@@ -24,11 +25,11 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // The login page must render for unauthenticated users (legacy form or
-  // after the Authelia portal redirects back) instead of looping, so the
-  // anonymous case always passes through. The Authelia handshake below still
-  // provisions a session when the trusted header is present, so the portal's
-  // redirect back to /admin/login lands logged in and the app re-directs to
-  // /admin.
+  // after the provider portal redirects back) instead of looping, so the
+  // anonymous case always passes through. The forward-auth handshake below
+  // still provisions a session when the trusted header is present, so the
+  // portal's redirect back to /admin/login lands logged in and the app
+  // re-directs to /admin.
   const isLogin = pathname === '/admin/login';
 
   // Existing valid session.
@@ -37,13 +38,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Authelia forward-auth: convert the trusted header into an app session.
-  const autheliaUser = getAutheliaUser(request);
-  if (autheliaUser) {
-    const session = createAutheliaSession(autheliaUser, request);
+  // Forward-auth: convert the trusted header into an app session.
+  const forwardAuthUser = getForwardAuthUser(request);
+  if (forwardAuthUser) {
+    const session = createForwardAuthSession(forwardAuthUser, request);
 
     // Keep the injected identity header from leaking to downstream handlers.
-    request.headers.delete(getAutheliaUserHeader());
+    request.headers.delete(getForwardAuthUserHeader());
 
     const response = NextResponse.next();
     response.cookies.set('access_token', session.accessToken, session.accessCookieOptions);

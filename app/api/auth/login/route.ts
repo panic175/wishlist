@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAccessToken, generateRefreshToken, validateAdminCredentials, isSecureCookie } from '@/lib/auth/utils';
-import { isAutheliaEnabled } from '@/lib/auth/authelia';
+import { isForwardAuthEnabled } from '@/lib/auth/forward-auth';
 
 export async function POST(request: NextRequest) {
   try {
-    if (isAutheliaEnabled()) {
+    if (isForwardAuthEnabled()) {
       return NextResponse.json(
-        { error: 'Admin login is handled by Authelia' },
+        { error: 'Admin login is handled by your identity provider' },
         { status: 403 }
       );
     }

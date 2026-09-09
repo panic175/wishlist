@@ -171,8 +171,8 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'login.signingIn': 'Signing in...',
     'login.signIn': 'Sign In',
     'login.failed': 'Login failed',
-    'login.authelia': 'Continue with Authelia',
-    'login.autheliaSubtitle': 'Sign in with your Authelia account to manage the wishlists.',
+    'login.forwardAuth': 'Continue with {provider}',
+    'login.forwardAuthSubtitle': 'Sign in with your {provider} account to manage the wishlists.',
 
     // Lock page
     'lock.passwordRequired': 'Password Required',
@@ -422,8 +422,8 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'login.signingIn': 'Anmeldung...',
     'login.signIn': 'Anmelden',
     'login.failed': 'Anmeldung fehlgeschlagen',
-    'login.authelia': 'Mit Authelia fortfahren',
-    'login.autheliaSubtitle': 'Melden Sie sich mit Ihrem Authelia-Konto an, um die Wunschlisten zu verwalten.',
+    'login.forwardAuth': 'Mit {provider} fortfahren',
+    'login.forwardAuthSubtitle': 'Melden Sie sich mit Ihrem {provider}-Konto an, um die Wunschlisten zu verwalten.',
 
     // Lock page
     'lock.passwordRequired': 'Passwort erforderlich',

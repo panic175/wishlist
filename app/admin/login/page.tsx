@@ -1,12 +1,18 @@
 import LoginForm from './LoginForm';
+import {
+  isForwardAuthEnabled,
+  getForwardAuthProviderName,
+  getForwardAuthPortalUrl,
+} from '@/lib/auth/forward-auth';
 
 export const dynamic = 'force-dynamic';
 
 export default function AdminLoginPage() {
   return (
     <LoginForm
-      autheliaEnabled={process.env.AUTHELIA_ENABLED === 'true'}
-      autheliaPortalUrl={process.env.AUTHELIA_PORTAL_URL}
+      forwardAuthEnabled={isForwardAuthEnabled()}
+      forwardAuthProviderName={getForwardAuthProviderName()}
+      forwardAuthPortalUrl={getForwardAuthPortalUrl()}
     />
   );
 }

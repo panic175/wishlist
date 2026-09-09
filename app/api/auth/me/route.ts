@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken } from '@/lib/auth/utils';
-import { createAutheliaSession, getAutheliaUser } from '@/lib/auth/authelia';
+import { createForwardAuthSession, getForwardAuthUser } from '@/lib/auth/forward-auth';
 
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('access_token')?.value;
 
     if (!token) {
-      // Authelia forward-auth: bootstrap a session from the trusted header.
+      // Forward-auth: bootstrap a session from the trusted header.
       // Covers client-side navigation, where the proxy may not have run.
-      const autheliaUser = getAutheliaUser(request);
-      if (autheliaUser) {
-        const session = createAutheliaSession(autheliaUser, request);
+      const forwardAuthUser = getForwardAuthUser(request);
+      if (forwardAuthUser) {
+        const session = createForwardAuthSession(forwardAuthUser, request);
         const response = NextResponse.json({
           success: true,
-          user: { username: autheliaUser },
+          user: { username: forwardAuthUser },
         });
         response.cookies.set('access_token', session.accessToken, session.accessCookieOptions);
         response.cookies.set('refresh_token', session.refreshToken, session.refreshCookieOptions);

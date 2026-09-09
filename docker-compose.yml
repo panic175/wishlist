@@ -7,15 +7,22 @@ services:
       # User/Group IDs (defaults to 1000:1000, Unraid users set to 99:100)
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
-      # Admin credentials (used only when AUTHELIA_ENABLED=false)
+      # Admin credentials (used only when forward-auth is disabled)
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
-      # Authelia forward-auth (protects the /admin area via Traefik)
-      - AUTHELIA_ENABLED=${AUTHELIA_ENABLED:-true}
-      # Must match the header Authelia's forwardAuthMiddleware injects
-      # (authResponseHeaders on the Authelia container = Remote-User).
-      - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-Remote-User}
-      - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-https://auth.home.niemann.dev}
+      # Forward-auth SSO (protects the /admin area via Traefik). Works with any
+      # identity provider that can forward-authenticate (Authelia, Keycloak,
+      # Authentik, ...). AUTHELIA_ENABLED/AUTHELIA_USER_HEADER are deprecated
+      # aliases still accepted by the app if you have not migrated yet.
+      - FORWARD_AUTH_ENABLED=${FORWARD_AUTH_ENABLED:-true}
+      # Must match the header your proxy's forward-auth middleware injects
+      # (e.g. authResponseHeaders = Remote-User).
+      - FORWARD_AUTH_USER_HEADER=${FORWARD_AUTH_USER_HEADER:-Remote-User}
+      - FORWARD_AUTH_PORTAL_URL=${FORWARD_AUTH_PORTAL_URL:-https://auth.home.niemann.dev}
+      - FORWARD_AUTH_PROVIDER_NAME=${FORWARD_AUTH_PROVIDER_NAME:-SSO}
+      - AUTHELIA_ENABLED=${AUTHELIA_ENABLED:-}
+      - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-}
+      - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-}
     # Embed the image build (required to ship the Authelia/CSV/scraper code):
     # it must be a version of THIS repo, otherwise the env vars above do nothing.
     build:
@@ -32,9 +39,11 @@ services:
       - 'traefik.http.routers.wishlist.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`) && !PathRegexp(`^/admin(?:/.*)?$$`)'
       - "traefik.http.routers.wishlist.tls=true"
       - "traefik.http.routers.wishlist.service=wishlist"
-      # Admin router - behind Authelia forward-auth. authelia@docker is defined
-      # in labels on the Authelia container (which must be on the same 'web'
-      # network). Only /admin and subpaths reach this router.
+      # Admin router - behind forward-auth. authelia@docker is the example
+      # provider (defined in labels on the Authelia container, on the same 'web'
+      # network); point it at your own forward-auth middleware (Keycloak,
+      # Authentik, ...) and match FORWARD_AUTH_USER_HEADER to its header.
+      # Only /admin and subpaths reach this router.
       - "traefik.http.routers.wishlist-admin.entrypoints=websecure"
       - 'traefik.http.routers.wishlist-admin.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`) && PathRegexp(`^/admin(?:/.*)?$$`)'
       - "traefik.http.routers.wishlist-admin.tls=true"
