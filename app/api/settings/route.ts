@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db, settings } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { hashPassword } from '@/lib/auth/password';
+import { csrfGuard } from '@/lib/csrf';
 
 // GET /api/settings - Get all settings (public endpoint for reading only)
 export async function GET() {
@@ -51,6 +52,9 @@ export async function GET() {
 // PUT /api/settings - Update settings (admin only)
 export async function PUT(request: NextRequest) {
   try {
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     const token = request.cookies.get('access_token')?.value;
 
     if (!token) {

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, isSecureCookie } from '@/lib/auth/utils';
+import { csrfGuard } from '@/lib/csrf';
 
 export async function POST(request: NextRequest) {
   try {
+    // A cross-origin caller cannot read the tokens, but block the session
+    // rotation from being triggered off-site.
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     // Refresh tokens are only accepted from the httpOnly cookie, never from
     // the request body, so a leaked/replayed token cannot be used directly.
     const refreshToken = request.cookies.get('refresh_token')?.value;

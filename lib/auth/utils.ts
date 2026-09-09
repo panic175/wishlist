@@ -11,6 +11,11 @@ const secrets = initializeSecrets();
 const TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
+// JSON web tokens are always signed HMAC-SHA256. The algorithm is pinned on
+// both signing and verification so a token cannot replay with a different
+// (e.g. 'none' or asymmetric) algorithm header.
+const JWT_ALGORITHM = 'HS256';
+
 // The insecure default shipped in .env.example / docker-compose.yml. Logins
 // using it are refused.
 const DEFAULT_ADMIN_PASSWORD = 'changeme';
@@ -74,7 +79,7 @@ export function generateAccessToken(username: string): string {
   return jwt.sign(
     { username, type: 'access' } as TokenPayload,
     secrets.secret,
-    { expiresIn: TOKEN_EXPIRY } as jwt.SignOptions
+    { algorithm: JWT_ALGORITHM, expiresIn: TOKEN_EXPIRY } as jwt.SignOptions
   );
 }
 
@@ -85,7 +90,7 @@ export function generateRefreshToken(username: string): string {
   return jwt.sign(
     { username, type: 'refresh' } as TokenPayload,
     secrets.refreshSecret,
-    { expiresIn: REFRESH_TOKEN_EXPIRY } as jwt.SignOptions
+    { algorithm: JWT_ALGORITHM, expiresIn: REFRESH_TOKEN_EXPIRY } as jwt.SignOptions
   );
 }
 
@@ -94,7 +99,9 @@ export function generateRefreshToken(username: string): string {
  */
 export function verifyAccessToken(token: string): TokenPayload | null {
   try {
-    const payload = jwt.verify(token, secrets.secret) as TokenPayload;
+    const payload = jwt.verify(token, secrets.secret, {
+      algorithms: [JWT_ALGORITHM],
+    }) as TokenPayload;
     if (payload.type !== 'access') {
       return null;
     }
@@ -109,7 +116,9 @@ export function verifyAccessToken(token: string): TokenPayload | null {
  */
 export function verifyRefreshToken(token: string): TokenPayload | null {
   try {
-    const payload = jwt.verify(token, secrets.refreshSecret) as TokenPayload;
+    const payload = jwt.verify(token, secrets.refreshSecret, {
+      algorithms: [JWT_ALGORITHM],
+    }) as TokenPayload;
     if (payload.type !== 'refresh') {
       return null;
     }

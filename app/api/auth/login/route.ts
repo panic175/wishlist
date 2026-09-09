@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAccessToken, generateRefreshToken, validateAdminCredentials, isSecureCookie } from '@/lib/auth/utils';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+import { csrfGuard } from '@/lib/csrf';
 
 const LOGIN_WINDOW_MS = 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 5;

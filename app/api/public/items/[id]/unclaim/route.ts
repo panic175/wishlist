@@ -4,6 +4,7 @@ import { db, wishlistItems, wishlists } from '@/lib/db';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
 import { requireSiteUnlocked } from '@/lib/auth/lock';
 import { safeEqualString } from '@/lib/auth/password';
+import { csrfGuard } from '@/lib/csrf';
 
 const UNCLAIM_WINDOW_MS = 60 * 1000;
 const UNCLAIM_MAX_REQUESTS = 10;
@@ -13,6 +14,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Block cross-origin (forged) unclaims.
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     // Prevent automated claim/unclaim flapping.
     const ip = getClientIp(request);
     const limit = rateLimit(`unclaim:${ip}`, UNCLAIM_MAX_REQUESTS, UNCLAIM_WINDOW_MS);

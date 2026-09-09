@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import sharp from 'sharp';
 import { verifyAccessToken } from '@/lib/auth/utils';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+import { csrfGuard } from '@/lib/csrf';
 
 // Configuration
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -23,6 +24,10 @@ const UPLOAD_MAX_REQUESTS = 10;
 
 export async function POST(request: NextRequest) {
   try {
+    // Block cross-origin CSRF-style upload attempts.
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     // Uploads mutate server storage: require an admin session.
     const token = request.cookies.get('access_token')?.value;
     if (!token || !verifyAccessToken(token)) {

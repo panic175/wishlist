@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { isSecureCookie } from '@/lib/auth/utils';
 import { verifyPassword } from '@/lib/auth/password';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+import { csrfGuard } from '@/lib/csrf';
 
 const LOCK_WINDOW_MS = 60 * 1000;
 const LOCK_MAX_ATTEMPTS = 10;
@@ -12,6 +13,9 @@ const LOCK_MAX_ATTEMPTS = 10;
 // POST /api/lock - Verify password
 export async function POST(request: NextRequest) {
   try {
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     // Brute-force protection: 10 attempts per minute per client IP.
     const ip = getClientIp(request);
     const limit = rateLimit(`lock:${ip}`, LOCK_MAX_ATTEMPTS, LOCK_WINDOW_MS);

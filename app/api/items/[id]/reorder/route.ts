@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlistItems } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
+import { csrfGuard } from '@/lib/csrf';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrf = csrfGuard(request);
+    if (csrf) return csrf;
+
     const token = request.cookies.get('access_token')?.value;
 
     if (!token) {
