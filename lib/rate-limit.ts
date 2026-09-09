@@ -8,6 +8,13 @@ import type { NextRequest } from 'next/server';
  * with a shared store (e.g. Redis).
  */
 
+// Proxy-supplied IP headers are not honoured by default: without a trusted
+// reverse proxy they are trivially spoofable and would let a client bypass
+// per-IP limits. Set TRUST_PROXY_HEADERS=true only when running behind a proxy
+// that overwrites X-Forwarded-For / X-Real-IP for every request (see
+// DEPLOYMENT.md). When disabled, all requests share one bucket.
+const TRUST_PROXY_HEADERS = process.env.TRUST_PROXY_HEADERS === 'true';
+
 interface RateLimitBucket {
   count: number;
   resetAt: number;
@@ -57,16 +64,24 @@ export function rateLimit(key: string, limit: number, windowMs: number): RateLim
 }
 
 /**
- * Best-effort client identifier. Requires IP headers from a trusted reverse
- * proxy; falls back to a shared bucket when no source is available.
+ * Best-effort client identifier.
+ *
+ * Reads X-Forwarded-For / X-Real-IP ONLY when TRUST_PROXY_HEADERS=true; the
+ * reverse proxy must overwrite these for every request. Otherwise returns a
+ * shared key ('unknown') so spoofed headers can never be leveraged to evade
+ * throttling.
  */
 export function getClientIp(request: NextRequest): string {
+  if (!TRUST_PROXY_HEADERS) return 'unknown';
+
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) {
     const first = forwarded.split(',')[0].trim();
     if (first) return first;
   }
-  return request.headers.get('x-real-ip') || request.headers.get('cf-connecting-ip') || 'unknown';
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp && realIp.trim()) return realIp.trim();
+  return 'unknown';
 }
 
 /** Standard rate-limiter 429 response body. */
