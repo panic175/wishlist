@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       // Authelia forward-auth: bootstrap a session from the trusted header.
       // Covers client-side navigation, where the proxy may not have run.
-      const autheliaUser = getAutheliaUser(request.headers);
+      const autheliaUser = getAutheliaUser(request);
       if (autheliaUser) {
         const session = createAutheliaSession(autheliaUser, request);
         const response = NextResponse.json({
