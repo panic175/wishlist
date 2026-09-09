@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { type Settings } from '@/lib/api';
 
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'CHF', 'JPY'] as const;
+
 interface SettingsSectionProps {
   settings: Settings;
   onUpdate: (settings: Settings) => Promise<void>;
@@ -95,6 +97,27 @@ export default function SettingsSection({ settings, onUpdate }: SettingsSectionP
                 />
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   This appears below the title on the homepage
+                </p>
+              </div>
+              <div>
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Default Currency
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  value={settingsForm.defaultCurrency || 'USD'}
+                  onChange={(e) =>
+                    setSettingsForm((prev) => ({ ...prev, defaultCurrency: e.target.value }))
+                  }
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Currency used for new items unless overridden per item
                 </p>
               </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">

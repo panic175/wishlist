@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     if (!settingsObj.homepageSubtext) {
       settingsObj.homepageSubtext = 'Browse and explore available wishlists';
     }
+    if (!settingsObj.defaultCurrency) {
+      settingsObj.defaultCurrency = process.env.DEFAULT_CURRENCY || 'USD';
+    }
 
     // Convert passwordLockEnabled to boolean
     (settingsObj as any).passwordLockEnabled = settingsObj.passwordLockEnabled === 'true';
@@ -60,7 +63,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { siteTitle, homepageSubtext, passwordLockEnabled, passwordLock } = body;
+    const { siteTitle, homepageSubtext, passwordLockEnabled, passwordLock, defaultCurrency } = body;
 
     // Update or insert siteTitle
     if (siteTitle !== undefined) {
@@ -146,6 +149,27 @@ export async function PUT(request: NextRequest) {
         await db.insert(settings).values({
           key: 'passwordLockHash',
           value: hash,
+        });
+      }
+    }
+
+    // Update or insert defaultCurrency
+    if (defaultCurrency !== undefined) {
+      const existing = await db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, 'defaultCurrency'))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await db
+          .update(settings)
+          .set({ value: defaultCurrency, updatedAt: new Date() })
+          .where(eq(settings.key, 'defaultCurrency'));
+      } else {
+        await db.insert(settings).values({
+          key: 'defaultCurrency',
+          value: defaultCurrency,
         });
       }
     }

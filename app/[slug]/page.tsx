@@ -99,7 +99,7 @@ export default function PublicWishlistPage() {
     : items.filter((item) => !item.claimedAt || item.id === justClaimedItemId);
 
   const formatPrice = (price: number | null, currency: string) => {
-    if (!price) return null;
+    if (price === null) return null;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency || 'USD',
@@ -252,7 +252,7 @@ export default function PublicWishlistPage() {
                                   {url.label}
                                 </span>
                                 <span className="text-gray-900 dark:text-white font-bold text-lg">
-                                  {item.price && formatPrice(item.price, item.currency)}
+                                  {item.price !== null ? formatPrice(item.price, item.currency) : ''}
                                 </span>
                               </a>
                             ))}

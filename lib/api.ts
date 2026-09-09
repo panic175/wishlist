@@ -287,6 +287,7 @@ export interface Settings {
   homepageSubtext: string;
   passwordLockEnabled?: boolean;
   passwordLock?: string;
+  defaultCurrency?: string;
 }
 
 export const settingsApi = {
