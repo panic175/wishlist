@@ -3,14 +3,47 @@ services:
     image: reggiodigital/wishlist:latest
     container_name: wishlist
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     environment:
       # User/Group IDs (defaults to 1000:1000, Unraid users set to 99:100)
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
-      # Admin credentials
+      # Admin credentials (used only when AUTHELIA_ENABLED=false)
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+      # Authelia forward-auth (protects the /admin area via Traefik)
+      - AUTHELIA_ENABLED=true
+      - AUTHELIA_USER_HEADER=X-Forwarded-User
+      - AUTHELIA_PORTAL_URL=https://auth.example.com
+    # Embed the image build (required to ship the Authelia/CSV/scraper code):
+    # it must be a version of THIS repo, otherwise the env vars above do nothing.
+    build:
+      context: ./wishlist
     volumes:
-      - /folder-for-wishlist-data:/app/data
+      - /opt/docker/wishlist/data:/app/data
+    labels:
+      - "traefik.enable=true"
+      # Public router (fully open - wishlist viewing and claiming stay public)
+      - "traefik.http.routers.wishlist.entrypoints=websecure"
+      - 'traefik.http.routers.wishlist.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`)'
+      - "traefik.http.routers.wishlist.tls=true"
+      - "traefik.http.routers.wishlist.service=wishlist"
+      # Admin router - behind Authelia forward-auth, higher priority than the
+      # public router. authelia@docker is defined in labels on the Authelia
+      # container (which must be on the same 'web' network).
+      - "traefik.http.routers.wishlist-admin.entrypoints=websecure"
+      - 'traefik.http.routers.wishlist-admin.rule=Host(`${WISHLIST_DOMAIN:-wishlist.example.com}`) && PathRegexp(`^/admin(?:/.*)?$$`)'
+      - "traefik.http.routers.wishlist-admin.tls=true"
+      - "traefik.http.routers.wishlist-admin.service=wishlist"
+      - "traefik.http.routers.wishlist-admin.middlewares=authelia@docker,secHeaders@file,localIpWhitelist@file"
+      - "traefik.http.routers.wishlist-admin.priority=10"
+      # Shared service (same backend for both routers)
+      - "traefik.http.services.wishlist.loadbalancer.server.port=3000"
+      - "traefik.docker.network=web"
+    dns:
+      - 192.168.3.3
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
