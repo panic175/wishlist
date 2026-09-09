@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
+import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+
+const UNCLAIM_WINDOW_MS = 60 * 1000;
+const UNCLAIM_MAX_REQUESTS = 10;
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Prevent automated claim/unclaim flapping.
+    const ip = getClientIp(request);
+    const limit = rateLimit(`unclaim:${ip}`, UNCLAIM_MAX_REQUESTS, UNCLAIM_WINDOW_MS);
+    if (!limit.allowed) {
+      return tooManyRequestsResponse(limit.resetAt - Date.now());
+    }
+
     const { id } = await params;
 
     // Get the item

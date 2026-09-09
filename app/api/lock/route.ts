@@ -3,10 +3,21 @@ import { eq } from 'drizzle-orm';
 import { db, settings } from '@/lib/db';
 import crypto from 'crypto';
 import { isSecureCookie } from '@/lib/auth/utils';
+import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+
+const LOCK_WINDOW_MS = 60 * 1000;
+const LOCK_MAX_ATTEMPTS = 10;
 
 // POST /api/lock - Verify password
 export async function POST(request: NextRequest) {
   try {
+    // Brute-force protection: 10 attempts per minute per client IP.
+    const ip = getClientIp(request);
+    const limit = rateLimit(`lock:${ip}`, LOCK_MAX_ATTEMPTS, LOCK_WINDOW_MS);
+    if (!limit.allowed) {
+      return tooManyRequestsResponse(limit.resetAt - Date.now());
+    }
+
     const body = await request.json();
     const { password } = body;
 
