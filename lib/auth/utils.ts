@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { verifyPassword, safeEqualString } from './password';
 
 // Initialize secrets (auto-generate if not provided)
 const secrets = initializeSecrets();
@@ -9,6 +10,10 @@ const secrets = initializeSecrets();
 // Token expiry times
 const TOKEN_EXPIRY = '72h';
 const REFRESH_TOKEN_EXPIRY = '30d';
+
+// The insecure default shipped in .env.example / docker-compose.yml. Logins
+// using it are refused.
+const DEFAULT_ADMIN_PASSWORD = 'changeme';
 
 /**
  * Initialize JWT secrets - auto-generate and persist if not provided in environment
@@ -115,10 +120,24 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
 }
 
 /**
- * Validate admin credentials against environment variables
+ * Validate admin credentials.
+ *
+ * Prefers ADMIN_PASSWORD_HASH (an scrypt hash produced by hashPassword) when
+ * set. Falls back to the plaintext ADMIN_PASSWORD env var and compares it in
+ * constant time. The default `changeme` credential is always rejected.
  */
 export function validateAdminCredentials(username: string, password: string): boolean {
   const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+
+  // Constant-time username comparison.
+  if (!safeEqualString(username, adminUsername)) {
+    return false;
+  }
+
+  if (process.env.ADMIN_PASSWORD_HASH) {
+    return verifyPassword(password, process.env.ADMIN_PASSWORD_HASH);
+  }
+
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminPassword) {
@@ -126,7 +145,12 @@ export function validateAdminCredentials(username: string, password: string): bo
     return false;
   }
 
-  return username === adminUsername && password === adminPassword;
+  if (adminPassword === DEFAULT_ADMIN_PASSWORD) {
+    console.error('❌ ADMIN_PASSWORD is set to the insecure default. Refusing login.');
+    return false;
+  }
+
+  return safeEqualString(password, adminPassword);
 }
 
 export function isSecureCookie(request: { headers: { get(name: string): string | null }; url: string }): boolean {
