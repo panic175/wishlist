@@ -1,11 +1,7 @@
 'use client';
 
 import { useLanguage } from '@/lib/i18n/provider';
-
-interface PurchaseUrl {
-  label: string;
-  url: string;
-}
+import { type PurchaseUrl } from '@/lib/api';
 
 interface PurchaseUrlFieldsProps {
   purchaseUrls: PurchaseUrl[];
