@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlists } from '@/lib/db';
+import { requireSiteUnlocked } from '@/lib/auth/lock';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const locked = await requireSiteUnlocked(request);
+    if (locked) return locked;
+
     const { slug } = await params;
 
     const wishlist = await db

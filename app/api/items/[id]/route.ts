@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { verifyAccessToken } from '@/lib/auth/utils';
+import { requireSiteUnlocked } from '@/lib/auth/lock';
 
 export async function GET(
   request: NextRequest,
@@ -14,6 +15,12 @@ export async function GET(
     const token = request.cookies.get('access_token')?.value;
     const payload = token ? verifyAccessToken(token) : null;
     const isAuthenticated = payload !== null;
+
+    // Gate the public (unauthenticated) read path behind the site lock.
+    if (!isAuthenticated) {
+      const locked = await requireSiteUnlocked(request);
+      if (locked) return locked;
+    }
 
     // Get item
     const item = await db
@@ -51,9 +58,12 @@ export async function GET(
       );
     }
 
+    // Strip the claim token for anonymous visitors
+    const { claimedByToken: _claimedByToken, ...itemData } = item[0];
+
     return NextResponse.json({
       success: true,
-      item: item[0],
+      item: isAuthenticated ? item[0] : itemData,
     });
   } catch (error) {
     console.error('Error fetching item:', error);

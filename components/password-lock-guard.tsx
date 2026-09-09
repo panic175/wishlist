@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/provider';
 
+/** Exact cookie lookup (avoids substring false-positives like `xxsite_unlocked`). */
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default function PasswordLockGuard({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -23,7 +31,10 @@ export default function PasswordLockGuard({ children }: { children: React.ReactN
         const response = await fetch('/api/settings');
         const data = await response.json();
 
-        if (data.success && data.settings.passwordLockEnabled) {
+        // An unlocked site (valid site_unlocked cookie) bypasses the redirect.
+        const isUnlocked = getCookie('site_unlocked') === 'true';
+
+        if (data.success && data.settings.passwordLockEnabled && !isUnlocked) {
           setIsLocked(true);
           // Redirect to lock page
           router.push('/lock');

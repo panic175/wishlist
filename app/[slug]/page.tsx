@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import DOMPurify from 'dompurify';
 import { wishlistsApi, itemsApi, claimingApi, type Wishlist, type Item } from '@/lib/api';
@@ -29,6 +29,9 @@ export default function PublicWishlistPage() {
   // Unclaim state
   const [isUnclaiming, setIsUnclaiming] = useState(false);
   const [unclaimError, setUnclaimError] = useState('');
+  // Claim tokens returned at claim time; held client-side (never exposed via
+  // public item responses) and required to unclaim an item.
+  const claimTokensRef = useRef<Record<string, string>>({});
 
   useEffect(() => {
     fetchWishlist();
@@ -64,7 +67,8 @@ export default function PublicWishlistPage() {
     setClaimError('');
 
     try {
-      await claimingApi.claim(itemId, undefined, claimNote);
+      const claimResult = await claimingApi.claim(itemId, undefined, claimNote);
+      claimTokensRef.current[itemId] = claimResult.claimToken;
 
       setJustClaimedItemId(itemId);
       setJustClaimedNote(claimNote);
@@ -83,11 +87,18 @@ export default function PublicWishlistPage() {
       return;
     }
 
+    const claimToken = claimTokensRef.current[itemId];
+    if (!claimToken) {
+      setUnclaimError(t('wishlist.unclaimTokenMissing'));
+      return;
+    }
+
     setIsUnclaiming(true);
     setUnclaimError('');
 
     try {
-      await claimingApi.unclaim(itemId);
+      await claimingApi.unclaim(itemId, claimToken);
+      delete claimTokensRef.current[itemId];
       fetchWishlist();
     } catch (err: any) {
       setUnclaimError(err.message || t('wishlist.unclaimFailed'));

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, wishlistItems, wishlists } from '@/lib/db';
 import { rateLimit, getClientIp, tooManyRequestsResponse } from '@/lib/rate-limit';
+import { requireSiteUnlocked } from '@/lib/auth/lock';
+import { safeEqualString } from '@/lib/auth/password';
 
 const UNCLAIM_WINDOW_MS = 60 * 1000;
 const UNCLAIM_MAX_REQUESTS = 10;
@@ -18,7 +20,20 @@ export async function POST(
       return tooManyRequestsResponse(limit.resetAt - Date.now());
     }
 
+    // Locked sites do not allow anonymous unclaims.
+    const locked = await requireSiteUnlocked(request);
+    if (locked) return locked;
+
     const { id } = await params;
+    const body = await request.json().catch(() => null);
+    const { claimToken } = body || {};
+
+    if (typeof claimToken !== 'string' || claimToken.trim() === '') {
+      return NextResponse.json(
+        { error: 'Claim token is required' },
+        { status: 400 }
+      );
+    }
 
     // Get the item
     const item = await db
@@ -39,6 +54,14 @@ export async function POST(
       return NextResponse.json(
         { error: 'Item is not claimed' },
         { status: 400 }
+      );
+    }
+
+    // Only the claimant (holding the claim token) may unclaim.
+    if (!safeEqualString(claimToken, item[0].claimedByToken)) {
+      return NextResponse.json(
+        { error: 'Invalid claim token' },
+        { status: 403 }
       );
     }
 
@@ -63,7 +86,7 @@ export async function POST(
       );
     }
 
-    // Remove claim information (honor system - no verification)
+    // Remove claim information
     const updatedItem = await db
       .update(wishlistItems)
       .set({

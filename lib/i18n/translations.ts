@@ -52,6 +52,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'wishlist.notFoundBody': 'This wishlist does not exist or is not public.',
     'wishlist.unclaimConfirm': 'Are you sure you want to unclaim this item?',
     'wishlist.unclaimFailed': 'Failed to unclaim item',
+    'wishlist.unclaimTokenMissing': 'Your claim token is not available anymore. Please re-claim the item if you still want to remove the claim.',
     'wishlist.claimFailed': 'Failed to claim item',
 
     // Admin dashboard
@@ -301,6 +302,7 @@ export const dictionary: Record<Language, Record<string, string>> = {
     'wishlist.notFoundBody': 'Diese Wunschliste existiert nicht oder ist nicht öffentlich.',
     'wishlist.unclaimConfirm': 'Möchten Sie die Reservierung dieses Artikels wirklich aufheben?',
     'wishlist.unclaimFailed': 'Reservierung konnte nicht aufgehoben werden',
+    'wishlist.unclaimTokenMissing': 'Ihr Reservierungs-Token ist nicht mehr verfügbar. Reservieren Sie den Artikel erneut, falls Sie die Reservierung entfernen möchten.',
     'wishlist.claimFailed': 'Reservierung fehlgeschlagen',
 
     // Admin dashboard
