@@ -66,3 +66,7 @@ drizzle/
 # testing
 /test-results
 /playwright-report
+
+# lokale Daten/Artefakte (sops+arcane,30.10.2026)
+*.bak-*
+*.bpre-*
