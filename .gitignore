@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env
+.env.runtime
 .env*.local
 
 # vercel
@@ -65,4 +66,3 @@ drizzle/
 # testing
 /test-results
 /playwright-report
-docker-compose.traefik.yml
