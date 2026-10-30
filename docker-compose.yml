@@ -17,10 +17,12 @@ services:
       # (authResponseHeaders on the Authelia container = Remote-User).
       - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-Remote-User}
       - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-https://auth.home.niemann.dev}
-    # Embed the image build (required to ship the Authelia/CSV/scraper code):
-    # it must be a version of THIS repo, otherwise the env vars above do nothing.
-    build:
-      context: .
+    # Image wird manuell gebaut, weil Arcanes Build-Pfad derzeit fehlschlaegt
+    # ("invalid tar header" beim Kontext-Transport; Kontext selbst ist sauber).
+    # Update Ablauf:
+    #   docker build -t wishlist-app /opt/docker/wishlist/wishlist
+    #   danach in Arcane "Redeploy" (erzwingt Recreate, neues Bild wird genommen)
+    image: wishlist-app
     volumes:
       - /opt/docker/wishlist/data:/app/data
     labels:
