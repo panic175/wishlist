@@ -17,10 +17,10 @@ services:
       # (authResponseHeaders on the Authelia container = Remote-User).
       - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-Remote-User}
       - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-https://auth.home.niemann.dev}
-    # Image wird in GitHub Actions gebaut (panic175/wishlist -> ghcr.io);
-    # Arcanes Build-Pfad ist defekt, deshalb kein build: hier.
+    # Image aus GitHub Actions (panic175/wishlist -> ghcr.io), auf die
+    # Semver-Version gepinnt; Renovate bumped den Tag, die CI legt ihn pro Push an.
     # Update: docker compose pull && docker compose up -d --force-recreate
-    image: ghcr.io/panic175/wishlist:latest
+    image: ghcr.io/panic175/wishlist:1.0.1
     volumes:
       - /opt/docker/wishlist/data:/app/data
     labels:
