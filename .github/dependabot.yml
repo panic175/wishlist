@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Compose-Image (ghcr.io/panic175/wishlist:x.y.z) — die Versions-Ledger
+  # liefert die CI, hier geht es nur um den Pin im docker-compose.yml.
+  - package-ecosystem: docker-compose
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "10:40"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 5
