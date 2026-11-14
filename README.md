@@ -5,6 +5,34 @@
 
 A simple, self-hosted wishlist app for sharing gift ideas with family and friends.
 
+## Changes in this fork
+
+This fork differs from [Reggio-Digital/wishlist](https://github.com/Reggio-Digital/wishlist):
+
+* **Image is built by GitHub Actions**, not from Docker Hub. Every push to `main` publishes
+  [`ghcr.io/panic175/wishlist`](https://github.com/panic175/wishlist/pkgs/container/wishlist) with three tags:
+  `latest`, the short commit SHA, and a **semver version**. The version comes from a git tag ledger
+  (`v1.0.0`, `v1.0.1`, …) that the workflow increments automatically on every push to `main`, so the image
+  can be pinned (`image: ghcr.io/panic175/wishlist:1.0.0`) and picked up by Renovate. Pushing an explicit
+  `v*` tag publishes exactly that version; a manual run (`workflow_dispatch`) rebuilds without bumping.
+  The upstream `docker-publish.yml` was switched from Docker Hub to GHCR because the `DOCKERHUB_*` secrets
+  this fork inherited never existed — that workflow had never run.
+* **Authelia forward-auth** protects the admin area: `/admin/*` is only reachable through
+  `auth.home.niemann.dev` (LAN host), while the public host has **no** admin router at all (Traefik 404).
+  The app reads the `Remote-User` header (`AUTHELIA_ENABLED`, `AUTHELIA_USER_HEADER`).
+* **Secrets stay encrypted at rest:** runtime secrets are decrypted by an Arcane pre-deploy hook
+  (sops/age → `.env.runtime`) and read via `env_file`; `secrets.enc.env` is the only secret file in git.
+* **Dedicated Docker network** `wishlist_internal` instead of the shared `web`, plus the LAN/public router
+  split described above.
+* Runtime data lives outside the repo in `/opt/docker/wishlist/data` (bind mount), `*.bak-*` and friends
+  are gitignored.
+
+Update a running deployment (the pre-deploy hook decrypts `.env.runtime` first):
+
+```sh
+docker compose pull && docker compose up -d --force-recreate
+```
+
 ## Why This App?
 
 Most wishlist apps are bloated with features you don't need, require accounts for everyone, or lock you into a platform. This app solves a simple problem: you want to share what you'd like as gifts, and your friends and family want to claim items without spoiling the surprise.
