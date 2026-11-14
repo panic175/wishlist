@@ -11,3 +11,38 @@ updates:
     commit-message:
       prefix: "chore(deps)"
     open-pull-requests-limit: 5
+  # package.json + package-lock.json (next, react, scraper, libs)
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:40"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "chore(deps)"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+    # Majors (z.B. next 16 -> 17) bleiben eigene PRs
+  # Node-Basisbild im Dockerfile
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:40"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "chore(deps)"
+  # checkout/build-push/metadata/login-Aktionen
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:40"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "chore(ci)"
