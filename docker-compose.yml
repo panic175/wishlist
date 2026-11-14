@@ -17,12 +17,10 @@ services:
       # (authResponseHeaders on the Authelia container = Remote-User).
       - AUTHELIA_USER_HEADER=${AUTHELIA_USER_HEADER:-Remote-User}
       - AUTHELIA_PORTAL_URL=${AUTHELIA_PORTAL_URL:-https://auth.home.niemann.dev}
-    # Image wird manuell gebaut, weil Arcanes Build-Pfad derzeit fehlschlaegt
-    # ("invalid tar header" beim Kontext-Transport; Kontext selbst ist sauber).
-    # Update Ablauf:
-    #   docker build -t wishlist-app /opt/docker/wishlist/wishlist
-    #   danach in Arcane "Redeploy" (erzwingt Recreate, neues Bild wird genommen)
-    image: wishlist-app
+    # Image wird in GitHub Actions gebaut (panic175/wishlist -> ghcr.io);
+    # Arcanes Build-Pfad ist defekt, deshalb kein build: hier.
+    # Update: docker compose pull && docker compose up -d --force-recreate
+    image: ghcr.io/panic175/wishlist:latest
     volumes:
       - /opt/docker/wishlist/data:/app/data
     labels:
@@ -50,12 +48,14 @@ services:
       - "traefik.http.routers.wishlist-public.middlewares=stripUserHeader@file,secHeaders@file"
       # Shared service (same backend for all routers)
       - "traefik.http.services.wishlist.loadbalancer.server.port=3000"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=wishlist_internal"
     dns:
       - 192.168.3.3
     networks:
-      - web
+      - wishlist_internal
 
 networks:
-  web:
+  # Owner: Traefik-Stack (08-entscheidungen.md), Restore: traefik-compose zuerst
+  wishlist_internal:
     external: true
+    name: wishlist_internal
