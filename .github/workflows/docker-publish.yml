@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -13,10 +14,31 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # Job-Ebene: write, um den Versions-Tag zurückzupuschen
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Tags sind das Versions-Ledger
+
+      # Ledger wie yuvomi-bring: jeder Push auf main erhöht die Patch-Version,
+      # ein expliziter v*-Tag veröffentlicht genau seine Version.
+      - name: Naechste Patch-Version
+        id: ver
+        run: |
+          prev=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$prev" ]; then
+            next=v1.0.0
+          else
+            n=${prev#v}
+            next=v${n%.*}.$((${n##*.} + 1))
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "img=${next#v}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -34,8 +56,10 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest
-            type=sha
+            type=raw,value=${{ steps.ver.outputs.img }},enable=${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+            type=semver,pattern={{version}}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -44,5 +68,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Record version tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git tag "${{ steps.ver.outputs.next }}"
+          git push origin "${{ steps.ver.outputs.next }}"
